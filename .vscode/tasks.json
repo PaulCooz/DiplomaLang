@@ -1,0 +1,52 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "cmake configure",
+            "command": "cmake",
+            "args": [
+                "-S",
+                ".",
+                "-B",
+                "./build",
+                "-DCMAKE_BUILD_TYPE=Debug"
+            ]
+        },
+        {
+            "label": "cmake build",
+            "command": "cmake",
+            "args": [
+                "--build",
+                "./build"
+            ],
+            "dependsOn": [
+                "cmake configure"
+            ],
+        },
+        {
+            "label": "cmake build and run",
+            "command": "./build/${workspaceFolderBasename}.exe",
+            "dependsOn": [
+                "cmake build"
+            ],
+            "group": "build"
+        },
+        {
+            "label": "cmake build (no configure)",
+            "command": "cmake",
+            "args": [
+                "--build",
+                "./build"
+            ],
+        },
+        {
+            "label": "cmake build and run (no configure)",
+            "command": "./build/${workspaceFolderBasename}.exe",
+            "dependsOn": [
+                "cmake build (no configure)"
+            ],
+            "group": "build"
+        },
+    ]
+}
