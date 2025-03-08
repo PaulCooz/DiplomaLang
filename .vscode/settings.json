@@ -53,6 +53,7 @@
         "xutility": "cpp",
         "vector": "cpp",
         "functional": "cpp",
-        "optional": "cpp"
+        "optional": "cpp",
+        "xhash": "cpp"
     }
 }
