@@ -1,9 +1,14 @@
-#include "common.cpp"
+#include "tokenizer.hpp"
+#include "common.hpp"
 #include <functional>
+#include <iostream>
 #include <optional>
 #include <string>
 
 int currLine, currColumn;
+
+Lexeme::Lexeme(Grapheme token, std::string value, int ln, int col)
+    : grapheme(token), value(value), line(ln >= 0 ? ln : currLine), column(col >= 0 ? col : currColumn) {}
 
 bool isDigit(std::string str, int i) {
   return i < str.length() ? isdigit(str[i]) : false;
@@ -33,32 +38,20 @@ void incCursor(std::string str, int& i, int count = 1) {
   }
 }
 
-// grapheme with a value
-class Token {
-public:
-  Grapheme grapheme;
-  std::string value;
-  int line;
-  int column;
-
-  Token(Grapheme token, std::string value, int ln = -1, int col = -1)
-      : grapheme(token), value(value), line(ln >= 0 ? ln : currLine), column(col >= 0 ? col : currColumn) {}
-};
-
-std::function<std::optional<Token>(std::string str, int& i)>
+std::function<std::optional<Lexeme>(std::string str, int& i)>
 wordHandler(Grapheme grapheme, std::string word, bool checkSpaceOrEOF = false) {
   return [grapheme, word, checkSpaceOrEOF](std::string str, int& i) {
-    std::optional<Token> result = std::nullopt;
+    std::optional<Lexeme> result = std::nullopt;
     if (isSub(str, i, word) && (!checkSpaceOrEOF || isSpaceOrEOF(str, i + word.length()))) {
-      result = Token(grapheme, word);
+      result = Lexeme(grapheme, word);
       incCursor(str, i, word.length());
     }
     return result;
   };
 }
 
-std::optional<Token> numberHandler(std::string str, int& i) {
-  std::optional<Token> result = std::nullopt;
+std::optional<Lexeme> numberHandler(std::string str, int& i) {
+  std::optional<Lexeme> result = std::nullopt;
   if (isDigit(str, i)) {
     bool has_dot = false;
     std::string value = "";
@@ -78,13 +71,13 @@ std::optional<Token> numberHandler(std::string str, int& i) {
       }
       incCursor(str, i);
     }
-    result = Token(NUMBER, value, sLn, sCol);
+    result = Lexeme(NUMBER, value, sLn, sCol);
   }
   return result;
 }
 
-std::optional<Token> identifierHandler(std::string str, int& i) {
-  std::optional<Token> result = std::nullopt;
+std::optional<Lexeme> identifierHandler(std::string str, int& i) {
+  std::optional<Lexeme> result = std::nullopt;
   if (isAlpha(str, i)) {
     std::string value = "";
     int sLn = currLine, sCol = currColumn;
@@ -94,12 +87,12 @@ std::optional<Token> identifierHandler(std::string str, int& i) {
       if (!isDigit(str, i) && !isAlpha(str, i))
         break;
     } while (i < str.length());
-    result = Token(IDENTIFIER, value, sLn, sCol);
+    result = Lexeme(IDENTIFIER, value, sLn, sCol);
   }
   return result;
 }
 
-std::function<std::optional<Token>(std::string str, int& i)> tokenHandlers[] = {
+std::function<std::optional<Lexeme>(std::string str, int& i)> tokenHandlers[] = {
     wordHandler(LEFT_PAREN, "("),
     wordHandler(RIGHT_PAREN, ")"),
     wordHandler(LEFT_BRACE, "{"),
@@ -136,10 +129,10 @@ std::function<std::optional<Token>(std::string str, int& i)> tokenHandlers[] = {
     identifierHandler,
 };
 
-std::vector<Token> performTokenization(std::istreambuf_iterator<char> begin, std::istreambuf_iterator<char> end) {
+std::vector<Lexeme> performTokenization(std::istreambuf_iterator<char> begin, std::istreambuf_iterator<char> end) {
   std::string str(begin, end);
 
-  std::vector<Token> tokens;
+  std::vector<Lexeme> tokens;
   int i = 0;
   currLine = currColumn = 0;
   while (i < str.length()) {
@@ -163,6 +156,7 @@ std::vector<Token> performTokenization(std::istreambuf_iterator<char> begin, std
       incCursor(str, i);
     }
   }
+  tokens.emplace_back(Lexeme::end_of_file());
 
   return tokens;
 }

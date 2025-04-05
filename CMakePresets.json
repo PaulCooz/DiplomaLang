@@ -1,0 +1,15 @@
+{
+    "version": 8,
+    "configurePresets": [
+        {
+            "name": "windows ninja",
+            "displayName": "Windows ninja preset",
+            "generator": "Ninja",
+            "binaryDir": "${workspaceFolder}/build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "WITH_TESTS": "ON"
+            }
+        }
+    ]
+}

@@ -1,6 +1,5 @@
-#pragma once
-
-#include <iostream>
+#ifndef COMMON
+#define COMMON
 
 // the smallest functional unit of a writing system
 enum Grapheme {
@@ -46,3 +45,5 @@ enum Grapheme {
   IF,
   ELSE,
 };
+
+#endif // COMMON
