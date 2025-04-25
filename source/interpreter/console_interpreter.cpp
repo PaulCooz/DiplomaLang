@@ -1,4 +1,6 @@
 #include "abstract_syntax_tree.hpp"
+#include <format>
+#include <functional>
 #include <iostream>
 #include <map>
 
@@ -19,7 +21,7 @@ ExprResult VarExpr::evaluate() {
 
 ExprResult NewVarExpr::evaluate() {
   variables[identifier.value] = value->evaluate();
-  std::cout << "var " << identifier.value << " = " << variables[identifier.value].GetAsString() << std::endl;
+  std::cout << variables[identifier.value].GetAsString() << std::endl;
   return variables[identifier.value];
 }
 
@@ -29,31 +31,34 @@ ExprResult VarAssignExpr::evaluate() {
     std::cout << "there is no var \"" << identifier.value << "\", try ':=' for creating new variables" << std::endl;
   }
   variables[identifier.value] = value->evaluate();
-  std::cout << identifier.value << " = " << variables[identifier.value].GetAsString() << std::endl;
+  std::cout << variables[identifier.value].GetAsString() << std::endl;
   return variables[identifier.value];
 }
 
 ExprResult UnaryExpr::evaluate() {
-  std::cout << oper.value << std::endl;
-  return value->evaluate();
+  if (oper.grapheme == MINUS) {
+    return ExprResult(-(value->evaluate()));
+  } else {
+    throw new std::exception("not implemented");
+  }
 }
 
 ExprResult BinaryExpr::evaluate() {
-  auto res = (double_t)0;
   if (oper.grapheme == PLUS) {
-    res = left->evaluate().value.Real64 + right->evaluate().value.Real64;
+    return left->evaluate() + right->evaluate();
   } else if (oper.grapheme == MINUS) {
-    res = left->evaluate().value.Real64 - right->evaluate().value.Real64;
+    return left->evaluate() - right->evaluate();
   } else if (oper.grapheme == STAR) {
-    res = left->evaluate().value.Real64 * right->evaluate().value.Real64;
+    return left->evaluate() * right->evaluate();
   } else if (oper.grapheme == SLASH) {
-    res = left->evaluate().value.Real64 / right->evaluate().value.Real64;
+    return left->evaluate() / right->evaluate();
   }
-  return ExprResult(res);
+
+  throw std::exception(std::format("no overload for '{}' as {}", oper.value, (int)oper.grapheme).c_str());
 }
 
 ExprResult PrintExpr::evaluate() {
   auto res = value->evaluate();
-  std::cout << "print " << res.GetAsString() << std::endl;
+  std::cout << res.GetAsString() << std::endl;
   return res;
 }

@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 3.31.6)
 project(DiplomaPKuz LANGUAGES C CXX)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
+
+set(INTERPRETER_SOURCE "source/interpreter/console_interpreter.cpp" CACHE STRING "path to interpreter's source")
 
 file(GLOB files "source/*.cpp")
 foreach(file_path ${files})
@@ -12,7 +14,7 @@ foreach(file_path ${files})
     endif()
 endforeach()
 
-add_executable(${PROJECT_NAME} "source/main.cpp" ${sources})
+add_executable(${PROJECT_NAME} "source/main.cpp" ${sources} ${INTERPRETER_SOURCE})
 target_include_directories(${PROJECT_NAME} PRIVATE "interface")
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "diploma")
 
@@ -38,8 +40,8 @@ if(WITH_TESTS)
     foreach(file_path ${files})
         cmake_path(GET file_path STEM file_name)
 
-        add_executable(${file_name} ${file_path} ${sources})
-        target_compile_features(${file_name} PRIVATE cxx_std_20)
+        add_executable(${file_name} ${file_path} ${sources} ${INTERPRETER_SOURCE})
+        target_compile_features(${file_name} PRIVATE cxx_std_23)
         target_include_directories(${file_name} PRIVATE "${PROJECT_SOURCE_DIR}/interface")
         target_link_libraries(${file_name} GTest::gtest_main)
 

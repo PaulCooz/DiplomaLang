@@ -3,19 +3,19 @@
 #include <iostream>
 #include <vector>
 
-std::vector<Lexeme> tokens;
+std::vector<Token> tokens;
 std::vector<Expr*> expressions;
 
-int currToken = 0;
+int currToken;
 
-Lexeme top(int offset = 0) { // get i-th or EOF
+Token top(int offset = 0) { // get i-th or EOF
   if (tokens.empty())
-    return Lexeme::end_of_file();
+    return Token::endOfFile();
   int i = currToken + offset;
   return 0 <= i && i < tokens.size() ? tokens[i] : tokens.back();
 }
 
-Lexeme pop() {
+Token pop() {
   auto t = top();
   currToken++;
   return t;
@@ -52,7 +52,10 @@ Expr* handlePrimitive() {
 
   if (nextSequence(NUMBER)) {
     auto num = pop();
-    return new PrimaryExpr(ExprResult(std::stod(num.value)));
+    if (num.value.contains("."))
+      return new PrimaryExpr(ExprResult(std::stod(num.value)));
+    else
+      return new PrimaryExpr(ExprResult(std::stoi(num.value)));
   }
   if (nextSequence(STRING)) {
     auto str = pop();
@@ -68,7 +71,7 @@ Expr* handlePrimitive() {
     pop();
     auto expr = handleTerm();
     if (!nextSequence(RIGHT_PAREN))
-      std::cout << "STOP! Where is my ')'" << std::endl;
+      std::cout << "STOP! Where is my ')'?" << std::endl;
     pop();
     return expr;
   }
@@ -86,20 +89,20 @@ Expr* handleUnary() {
 
 Expr* handleFactor() {
   auto left = handleUnary();
-  if (top().grapheme == STAR || top().grapheme == SLASH) {
+  while (top().grapheme == STAR || top().grapheme == SLASH) {
     auto oper = pop();
     auto right = handleUnary();
-    return new BinaryExpr(oper, left, right);
+    left = new BinaryExpr(oper, left, right);
   }
   return left;
 }
 
 Expr* handleTerm() {
   auto left = handleFactor();
-  if (top().grapheme == PLUS || top().grapheme == MINUS) {
+  while (top().grapheme == PLUS || top().grapheme == MINUS) {
     auto oper = pop();
     auto right = handleFactor();
-    return new BinaryExpr(oper, left, right);
+    left = new BinaryExpr(oper, left, right);
   }
   return left;
 }
@@ -134,9 +137,10 @@ Expr* handleExpression() {
   return handleTerm();
 }
 
-std::vector<Expr*> parseSyntaxTree(std::vector<Lexeme> t) {
+std::vector<Expr*> parseSyntaxTree(std::vector<Token> t) {
   tokens = t;
   expressions = {};
+  currToken = 0;
   while (!topIsEnd()) {
     auto exp = handleExpression();
     if (exp)
