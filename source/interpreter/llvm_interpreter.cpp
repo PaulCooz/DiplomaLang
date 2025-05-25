@@ -1,21 +1,29 @@
 #include "abstract_syntax_tree.hpp"
-#include "function.hpp"
 #include <format>
 #include <functional>
 #include <iostream>
+#include <llvm/ADT/APFloat.h>
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
 #include <map>
+
+using namespace llvm;
+
+LLVMContext* context;
+Module* module;
+IRBuilder<>* builder;
 
 std::map<std::string, ExprResult> variables;
 
-void startAST() {}
-void finishAST() {}
+void startAST() {
+  context = new LLVMContext();
+  module = new Module("my cool module", *context);
+  builder = new IRBuilder<>(*context);
+}
 
-ExprResult executeBlock(std::map<std::string, ExprResult> vars, BlockExpr* block) {
-  auto currVars = variables;
-  variables = vars;
-  auto result = block->evaluate();
-  variables = currVars;
-  return result;
+void finishAST() {
+  module->print(outs(), nullptr);
 }
 
 ExprResult PrimaryExpr::evaluate() {
@@ -65,29 +73,6 @@ ExprResult BinaryExpr::evaluate() {
   }
 
   throw std::exception(std::format("no overload for '{}' as {}", oper.value, (int)oper.grapheme).c_str());
-}
-
-ExprResult FuncExpr::evaluate() {
-  return ExprResult(new Func(this, variables));
-}
-
-ExprResult
-Func::Call(std::function<ExprResult(std::map<std::string, ExprResult>, BlockExpr*)> execute, std::vector<Expr*> args) {
-  std::map<std::string, ExprResult> env;
-  for (auto p : closure) {
-    env[p.first] = p.second;
-  }
-  for (int i = 0; i < expr->args.size(); i++) {
-    env[expr->args[i].value] = args[i]->evaluate();
-  }
-  return execute(env, expr->body);
-}
-
-ExprResult CallExpr::evaluate() {
-  auto callable = func->evaluate();
-  if (callable.type != ExprResult::FUNC)
-    std::cout << "better NOT call /Saul/ " << callable.GetAsString() << std::endl;
-  return callable.value.func->Call(executeBlock, args);
 }
 
 ExprResult PrintExpr::evaluate() {

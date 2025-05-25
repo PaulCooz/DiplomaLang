@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.31.6)
+cmake_minimum_required(VERSION 4.0.1)
 project(DiplomaPKuz LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 23)
@@ -14,13 +14,22 @@ foreach(file_path ${files})
     endif()
 endforeach()
 
+include(FetchContent)
+set(FETCHCONTENT_QUIET FALSE)
+set(FETCHCONTENT_BASE_DIR ${CMAKE_BINARY_DIR})
+
+find_package(LLVM REQUIRED CONFIG)
+
+include_directories(${LLVM_INCLUDE_DIRS})
+separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
+add_definitions(${LLVM_DEFINITIONS_LIST})
+
 add_executable(${PROJECT_NAME} "source/main.cpp" ${sources} ${INTERPRETER_SOURCE})
 target_include_directories(${PROJECT_NAME} PRIVATE "interface")
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "diploma")
 
-include(FetchContent)
-set(FETCHCONTENT_QUIET FALSE)
-set(FETCHCONTENT_BASE_DIR ${CMAKE_BINARY_DIR})
+llvm_map_components_to_libnames(llvm_libs core support)
+target_link_libraries(${PROJECT_NAME} ${llvm_libs})
 
 if(WITH_TESTS)
     FetchContent_Declare(

@@ -98,11 +98,15 @@ std::function<std::optional<Token>(std::string str, int& i)> tokenHandlers[] = {
   wordHandler(LEFT_BRACE, "{"),
   wordHandler(RIGHT_BRACE, "}"),
   wordHandler(COMMA, ","),
+
   wordHandler(BANG_EQUAL, "!="),
   wordHandler(EQUAL_EQUAL, "=="),
   wordHandler(GREATER_EQUAL, ">="),
   wordHandler(LESS_EQUAL, "<="),
   wordHandler(COLON_EQUAL, ":="),
+  wordHandler(SLASH_SLASH, "//"),
+  wordHandler(MINUS_GREATER, "->"),
+
   wordHandler(PLUS, "+"),
   wordHandler(MINUS, "-"),
   wordHandler(STAR, "*"),
@@ -112,6 +116,7 @@ std::function<std::optional<Token>(std::string str, int& i)> tokenHandlers[] = {
   wordHandler(LESS, "<"),
   wordHandler(COLON, ":"),
   wordHandler(SLASH, "/"),
+  wordHandler(DOT, "."),
 
   wordHandler(TRUE, "true", true),
   wordHandler(FALSE, "false", true),
@@ -124,6 +129,7 @@ std::function<std::optional<Token>(std::string str, int& i)> tokenHandlers[] = {
   wordHandler(WHILE, "while", true),
   wordHandler(IF, "if", true),
   wordHandler(ELSE, "else", true),
+  wordHandler(RET, "ret", true),
 
   numberHandler,
   identifierHandler,

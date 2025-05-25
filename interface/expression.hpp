@@ -1,29 +1,36 @@
 #ifndef EXPR
 #define EXPR
 
+class Expr;
+class FuncExpr;
+class BlockExpr;
+struct ExprResult;
+
+#include "function.hpp"
 #include "tokenizer.hpp"
 #include <cstdint>
 #include <format>
 #include <string>
+#include <vector>
 
 struct ExprResult {
   union Value {
     bool boolean;
-    int32_t Int32;
-    int64_t Int64;
-    float_t Real32;
-    double_t Real64;
+    int32_t sint32;
+    float_t real32;
     const char* CStr;
+
+    Func* func;
   };
 
   enum Type {
     VOID,
     BOOL,
     INT_32,
-    INT_64,
     REAL_32,
-    REAL_64,
     CStr,
+
+    FUNC,
   };
 
   Type type;
@@ -40,22 +47,12 @@ struct ExprResult {
 
   ExprResult(int i) {
     type = INT_32;
-    value.Int32 = i;
-  }
-
-  ExprResult(int64_t i) {
-    type = INT_64;
-    value.Int64 = i;
+    value.sint32 = i;
   }
 
   ExprResult(float_t f) {
     type = REAL_32;
-    value.Real32 = f;
-  }
-
-  ExprResult(double_t d) {
-    type = REAL_64;
-    value.Real64 = d;
+    value.real32 = f;
   }
 
   ExprResult(std::string s) {
@@ -63,20 +60,24 @@ struct ExprResult {
     value.CStr = s.c_str();
   }
 
+  ExprResult(Func* func) {
+    type = FUNC;
+    value.func = func;
+  }
+
   std::string GetAsString() {
     switch (type) {
     case BOOL:
       return std::to_string(value.boolean);
     case INT_32:
-      return std::to_string(value.Int32);
-    case INT_64:
-      return std::to_string(value.Int64);
+      return std::to_string(value.sint32);
     case REAL_32:
-      return std::to_string(value.Real32);
-    case REAL_64:
-      return std::to_string(value.Real64);
+      return std::to_string(value.real32);
     case CStr:
       return value.CStr;
+
+    case FUNC:
+      return "function";
 
     default:
       return "";
@@ -86,13 +87,9 @@ struct ExprResult {
   ExprResult operator-() {
     switch (type) {
     case INT_32:
-      return ExprResult(-value.Int32);
-    case INT_64:
-      return ExprResult(-value.Int64);
+      return ExprResult(-value.sint32);
     case REAL_32:
-      return ExprResult(-value.Real32);
-    case REAL_64:
-      return ExprResult(-value.Real64);
+      return ExprResult(-value.real32);
     default:
       throw std::exception(std::format("there is no operator {} for {} type", '-', (int)type).c_str());
     }
@@ -101,16 +98,9 @@ struct ExprResult {
 #define binOperator(x) \
   ExprResult operator x(const ExprResult other) { \
     std::pair<std::pair<Type, Type>, ExprResult (*)(ExprResult, ExprResult)> overloads[] = { \
-      {{INT_32, INT_32},   [](auto l, auto r) { return ExprResult(l.value.Int32 x r.value.Int32); }            }, \
-      {{INT_32, INT_64},   [](auto l, auto r) { return ExprResult((int64_t)l.value.Int32 x r.value.Int64); }   }, \
-      {{INT_32, REAL_32},  [](auto l, auto r) { return ExprResult((float_t)l.value.Int32 x r.value.Real32); }  }, \
-      {{INT_32, REAL_64},  [](auto l, auto r) { return ExprResult((double_t)l.value.Int32 x r.value.Real64); } }, \
-      {{INT_64, INT_64},   [](auto l, auto r) { return ExprResult(l.value.Int64 x r.value.Int64); }            }, \
-      {{INT_64, REAL_32},  [](auto l, auto r) { return ExprResult((float_t)l.value.Int64 x r.value.Real32); }  }, \
-      {{INT_64, REAL_64},  [](auto l, auto r) { return ExprResult((double_t)l.value.Int64 x r.value.Real64); } }, \
-      {{REAL_32, REAL_32}, [](auto l, auto r) { return ExprResult(l.value.Real32 x r.value.Real32); }          }, \
-      {{REAL_32, REAL_64}, [](auto l, auto r) { return ExprResult((double_t)l.value.Real32 x r.value.Real64); }}, \
-      {{REAL_64, REAL_64}, [](auto l, auto r) { return ExprResult(l.value.Real64 x r.value.Real64); }          }, \
+      {{INT_32, INT_32},   [](auto l, auto r) { return ExprResult(l.value.sint32 x r.value.sint32); }            }, \
+      {{INT_32, REAL_32},  [](auto l, auto r) { return ExprResult((float_t)l.value.sint32 x r.value.real32); }  }, \
+      {{REAL_32, REAL_32}, [](auto l, auto r) { return ExprResult(l.value.real32 x r.value.real32); }          }, \
     }; \
     for (auto t : overloads) { \
       if (type == t.first.first && other.type == t.first.second) { \
@@ -192,6 +182,41 @@ public:
   Expr* right;
 
   BinaryExpr(Token oper, Expr* left, Expr* right) : oper(oper), left(left), right(right) {}
+
+  ExprResult evaluate() override;
+};
+
+class BlockExpr : public Expr {
+public:
+  std::vector<Expr*> list;
+
+  BlockExpr(std::vector<Expr*> list) : list(list) {}
+
+  ExprResult evaluate() override {
+    auto lastResult = ExprResult();
+    for (const auto e : list) {
+      lastResult = e->evaluate();
+    }
+    return lastResult;
+  }
+};
+
+class FuncExpr : public Expr {
+public:
+  std::vector<Token> args;
+  BlockExpr* body;
+
+  FuncExpr(std::vector<Token> args, BlockExpr* body) : args(args), body(body) {}
+
+  ExprResult evaluate() override;
+};
+
+class CallExpr : public Expr {
+public:
+  Expr* func;
+  std::vector<Expr*> args;
+
+  CallExpr(Expr* func, std::vector<Expr*> args) : func(func), args(args) {}
 
   ExprResult evaluate() override;
 };

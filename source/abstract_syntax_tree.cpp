@@ -38,6 +38,8 @@ Expr* handlePrimitive();
 Expr* handleUnary();
 Expr* handleFactor();
 Expr* handleTerm();
+BlockExpr* handleBlock();
+Expr* handleFunc();
 Expr* handleExpression();
 
 Expr* handlePrimitive() {
@@ -53,7 +55,7 @@ Expr* handlePrimitive() {
   if (nextSequence(NUMBER)) {
     auto num = pop();
     if (num.value.contains("."))
-      return new PrimaryExpr(ExprResult(std::stod(num.value)));
+      return new PrimaryExpr(ExprResult(std::stof(num.value)));
     else
       return new PrimaryExpr(ExprResult(std::stoi(num.value)));
   }
@@ -84,7 +86,22 @@ Expr* handleUnary() {
     auto oper = pop();
     return new UnaryExpr(oper, handleUnary());
   }
-  return handlePrimitive();
+
+  auto prim = handlePrimitive();
+  if (nextSequence(LEFT_PAREN)) {
+    pop(); // (
+    std::vector<Expr*> args;
+    while (!nextSequence(RIGHT_PAREN)) {
+      args.emplace_back(handleExpression());
+
+      if (nextSequence(COMMA))
+        pop(); // ,
+    }
+    pop();     // )
+    prim = new CallExpr(prim, args);
+  }
+
+  return prim;
 }
 
 Expr* handleFactor() {
@@ -105,6 +122,34 @@ Expr* handleTerm() {
     left = new BinaryExpr(oper, left, right);
   }
   return left;
+}
+
+BlockExpr* handleBlock() {
+  std::vector<Expr*> exprs;
+  auto blockStartColumn = top().column;
+  while (top().column == blockStartColumn) {
+    exprs.emplace_back(handleExpression());
+  }
+  return new BlockExpr(exprs);
+}
+
+Expr* handleFunc() {
+  std::vector<Token> args;
+  while (true) {
+    args.emplace_back(top());
+    pop();
+
+    if (top().grapheme == COMMA)
+      pop();
+    else
+      break;
+  }
+
+  if (top().grapheme != MINUS_GREATER)
+    std::cout << "Waited unnecessary '->' token" << std::endl;
+  pop();
+
+  return new FuncExpr(args, handleBlock());
 }
 
 Expr* handleExpression() {
@@ -132,6 +177,10 @@ Expr* handleExpression() {
   if (top().grapheme == IDENTIFIER && top().value == "print") {
     pop();
     return new PrintExpr(handleExpression());
+  }
+
+  if (nextSequence(IDENTIFIER, COMMA)) {
+    return handleFunc();
   }
 
   return handleTerm();

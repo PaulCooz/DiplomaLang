@@ -24,6 +24,8 @@ enum Grapheme {
   GREATER_EQUAL, // >=
   LESS,          // <
   LESS_EQUAL,    // <=
+
+  MINUS_GREATER, // ->
   COLON,         // :
   COLON_EQUAL,   // :=
   SLASH,         // /
@@ -44,6 +46,7 @@ enum Grapheme {
   WHILE,
   IF,
   ELSE,
+  RET,
 };
 
 #endif // COMMON
