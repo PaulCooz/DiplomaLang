@@ -45,23 +45,23 @@ Expr* handleExpression();
 Expr* handlePrimitive() {
   if (nextSequence(FALSE)) {
     pop();
-    return new PrimaryExpr(ExprResult(false));
+    return new PrimaryExpr(ExprValue(false));
   }
   if (nextSequence(TRUE)) {
     pop();
-    return new PrimaryExpr(ExprResult(true));
+    return new PrimaryExpr(ExprValue(true));
   }
 
   if (nextSequence(NUMBER)) {
     auto num = pop();
     if (num.value.contains("."))
-      return new PrimaryExpr(ExprResult(std::stof(num.value)));
+      return new PrimaryExpr(ExprValue(std::stof(num.value)));
     else
-      return new PrimaryExpr(ExprResult(std::stoi(num.value)));
+      return new PrimaryExpr(ExprValue(std::stoi(num.value)));
   }
   if (nextSequence(STRING)) {
     auto str = pop();
-    return new PrimaryExpr(ExprResult(str.value));
+    return new PrimaryExpr(ExprValue(str.value));
   }
 
   if (nextSequence(IDENTIFIER)) {

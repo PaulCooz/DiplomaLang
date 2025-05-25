@@ -14,7 +14,7 @@ LLVMContext* context;
 Module* module;
 IRBuilder<>* builder;
 
-std::map<std::string, ExprResult> variables;
+std::map<std::string, ExprValue> variables;
 
 void startAST() {
   context = new LLVMContext();
@@ -26,11 +26,11 @@ void finishAST() {
   module->print(outs(), nullptr);
 }
 
-ExprResult PrimaryExpr::evaluate() {
+ExprValue PrimaryExpr::evaluate() {
   return result;
 }
 
-ExprResult VarExpr::evaluate() {
+ExprValue VarExpr::evaluate() {
   auto res = variables.find(identifier.value);
   if (res == variables.end()) {
     std::cout << "not nice enough for \"" << identifier.value << "\" variable" << std::endl;
@@ -39,12 +39,12 @@ ExprResult VarExpr::evaluate() {
   return (*res).second;
 }
 
-ExprResult NewVarExpr::evaluate() {
+ExprValue NewVarExpr::evaluate() {
   variables[identifier.value] = value->evaluate();
   return variables[identifier.value];
 }
 
-ExprResult VarAssignExpr::evaluate() {
+ExprValue VarAssignExpr::evaluate() {
   auto var = variables.find(identifier.value);
   if (var == variables.end()) {
     std::cout << "there is no var \"" << identifier.value << "\", try ':=' for creating new variables" << std::endl;
@@ -53,15 +53,15 @@ ExprResult VarAssignExpr::evaluate() {
   return variables[identifier.value];
 }
 
-ExprResult UnaryExpr::evaluate() {
+ExprValue UnaryExpr::evaluate() {
   if (oper.grapheme == MINUS) {
-    return ExprResult(-(value->evaluate()));
+    return ExprValue(-(value->evaluate()));
   } else {
     throw new std::exception("not implemented");
   }
 }
 
-ExprResult BinaryExpr::evaluate() {
+ExprValue BinaryExpr::evaluate() {
   if (oper.grapheme == PLUS) {
     return left->evaluate() + right->evaluate();
   } else if (oper.grapheme == MINUS) {
@@ -75,7 +75,7 @@ ExprResult BinaryExpr::evaluate() {
   throw std::exception(std::format("no overload for '{}' as {}", oper.value, (int)oper.grapheme).c_str());
 }
 
-ExprResult PrintExpr::evaluate() {
+ExprValue PrintExpr::evaluate() {
   auto res = value->evaluate();
   std::cout << res.GetAsString() << std::endl;
   return res;

@@ -5,12 +5,12 @@
 #include <iostream>
 #include <map>
 
-std::map<std::string, ExprResult> variables;
+std::map<std::string, ExprValue> variables;
 
 void startAST() {}
 void finishAST() {}
 
-ExprResult executeBlock(std::map<std::string, ExprResult> vars, BlockExpr* block) {
+ExprValue executeBlock(std::map<std::string, ExprValue> vars, BlockExpr* block) {
   auto currVars = variables;
   variables = vars;
   auto result = block->evaluate();
@@ -18,11 +18,11 @@ ExprResult executeBlock(std::map<std::string, ExprResult> vars, BlockExpr* block
   return result;
 }
 
-ExprResult PrimaryExpr::evaluate() {
+ExprValue PrimaryExpr::evaluate() {
   return result;
 }
 
-ExprResult VarExpr::evaluate() {
+ExprValue VarExpr::evaluate() {
   auto res = variables.find(identifier.value);
   if (res == variables.end()) {
     std::cout << "not nice enough for \"" << identifier.value << "\" variable" << std::endl;
@@ -31,12 +31,12 @@ ExprResult VarExpr::evaluate() {
   return (*res).second;
 }
 
-ExprResult NewVarExpr::evaluate() {
+ExprValue NewVarExpr::evaluate() {
   variables[identifier.value] = value->evaluate();
   return variables[identifier.value];
 }
 
-ExprResult VarAssignExpr::evaluate() {
+ExprValue VarAssignExpr::evaluate() {
   auto var = variables.find(identifier.value);
   if (var == variables.end()) {
     std::cout << "there is no var \"" << identifier.value << "\", try ':=' for creating new variables" << std::endl;
@@ -45,15 +45,15 @@ ExprResult VarAssignExpr::evaluate() {
   return variables[identifier.value];
 }
 
-ExprResult UnaryExpr::evaluate() {
+ExprValue UnaryExpr::evaluate() {
   if (oper.grapheme == MINUS) {
-    return ExprResult(-(value->evaluate()));
+    return ExprValue(-(value->evaluate()));
   } else {
     throw new std::exception("not implemented");
   }
 }
 
-ExprResult BinaryExpr::evaluate() {
+ExprValue BinaryExpr::evaluate() {
   if (oper.grapheme == PLUS) {
     return left->evaluate() + right->evaluate();
   } else if (oper.grapheme == MINUS) {
@@ -67,13 +67,13 @@ ExprResult BinaryExpr::evaluate() {
   throw std::exception(std::format("no overload for '{}' as {}", oper.value, (int)oper.grapheme).c_str());
 }
 
-ExprResult FuncExpr::evaluate() {
-  return ExprResult(new Func(this, variables));
+ExprValue FuncExpr::evaluate() {
+  return ExprValue(new Func(this, variables));
 }
 
-ExprResult
-Func::Call(std::function<ExprResult(std::map<std::string, ExprResult>, BlockExpr*)> execute, std::vector<Expr*> args) {
-  std::map<std::string, ExprResult> env;
+ExprValue
+Func::Call(std::function<ExprValue(std::map<std::string, ExprValue>, BlockExpr*)> execute, std::vector<Expr*> args) {
+  std::map<std::string, ExprValue> env;
   for (auto p : closure) {
     env[p.first] = p.second;
   }
@@ -83,14 +83,14 @@ Func::Call(std::function<ExprResult(std::map<std::string, ExprResult>, BlockExpr
   return execute(env, expr->body);
 }
 
-ExprResult CallExpr::evaluate() {
+ExprValue CallExpr::evaluate() {
   auto callable = func->evaluate();
-  if (callable.type != ExprResult::FUNC)
+  if (callable.type != ExprValue::FUNC)
     std::cout << "better NOT call /Saul/ " << callable.GetAsString() << std::endl;
   return callable.value.func->Call(executeBlock, args);
 }
 
-ExprResult PrintExpr::evaluate() {
+ExprValue PrintExpr::evaluate() {
   auto res = value->evaluate();
   std::cout << res.GetAsString() << std::endl;
   return res;

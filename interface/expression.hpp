@@ -4,7 +4,7 @@
 class Expr;
 class FuncExpr;
 class BlockExpr;
-struct ExprResult;
+struct ExprValue;
 
 #include "function.hpp"
 #include "tokenizer.hpp"
@@ -13,7 +13,7 @@ struct ExprResult;
 #include <string>
 #include <vector>
 
-struct ExprResult {
+struct ExprValue {
   union Value {
     bool boolean;
     int32_t sint32;
@@ -36,31 +36,31 @@ struct ExprResult {
   Type type;
   Value value;
 
-  ExprResult() {
+  ExprValue() {
     type = VOID;
   }
 
-  ExprResult(bool b) {
+  ExprValue(bool b) {
     type = BOOL;
     value.boolean = b;
   }
 
-  ExprResult(int i) {
+  ExprValue(int i) {
     type = INT_32;
     value.sint32 = i;
   }
 
-  ExprResult(float_t f) {
+  ExprValue(float_t f) {
     type = REAL_32;
     value.real32 = f;
   }
 
-  ExprResult(std::string s) {
+  ExprValue(std::string s) {
     type = CStr;
     value.CStr = s.c_str();
   }
 
-  ExprResult(Func* func) {
+  ExprValue(Func* func) {
     type = FUNC;
     value.func = func;
   }
@@ -84,23 +84,23 @@ struct ExprResult {
     }
   }
 
-  ExprResult operator-() {
+  ExprValue operator-() {
     switch (type) {
     case INT_32:
-      return ExprResult(-value.sint32);
+      return ExprValue(-value.sint32);
     case REAL_32:
-      return ExprResult(-value.real32);
+      return ExprValue(-value.real32);
     default:
       throw std::exception(std::format("there is no operator {} for {} type", '-', (int)type).c_str());
     }
   }
 
 #define binOperator(x) \
-  ExprResult operator x(const ExprResult other) { \
-    std::pair<std::pair<Type, Type>, ExprResult (*)(ExprResult, ExprResult)> overloads[] = { \
-      {{INT_32, INT_32},   [](auto l, auto r) { return ExprResult(l.value.sint32 x r.value.sint32); }            }, \
-      {{INT_32, REAL_32},  [](auto l, auto r) { return ExprResult((float_t)l.value.sint32 x r.value.real32); }  }, \
-      {{REAL_32, REAL_32}, [](auto l, auto r) { return ExprResult(l.value.real32 x r.value.real32); }          }, \
+  ExprValue operator x(const ExprValue other) { \
+    std::pair<std::pair<Type, Type>, ExprValue (*)(ExprValue, ExprValue)> overloads[] = { \
+      {{INT_32, INT_32},   [](auto l, auto r) { return ExprValue(l.value.sint32 x r.value.sint32); }            }, \
+      {{INT_32, REAL_32},  [](auto l, auto r) { return ExprValue((float_t)l.value.sint32 x r.value.real32); }  }, \
+      {{REAL_32, REAL_32}, [](auto l, auto r) { return ExprValue(l.value.real32 x r.value.real32); }          }, \
     }; \
     for (auto t : overloads) { \
       if (type == t.first.first && other.type == t.first.second) { \
@@ -124,16 +124,16 @@ struct ExprResult {
 
 class Expr {
 public:
-  virtual ExprResult evaluate() = 0;
+  virtual ExprValue evaluate() = 0;
 };
 
 class PrimaryExpr : public Expr {
 public:
-  ExprResult result;
+  ExprValue result;
 
-  PrimaryExpr(ExprResult result) : result(result) {}
+  PrimaryExpr(ExprValue result) : result(result) {}
 
-  ExprResult evaluate() override;
+  ExprValue evaluate() override;
 };
 
 class VarExpr : public Expr {
@@ -142,7 +142,7 @@ public:
 
   VarExpr(Token identifier) : identifier(identifier) {}
 
-  ExprResult evaluate() override;
+  ExprValue evaluate() override;
 };
 
 class NewVarExpr : public Expr {
@@ -152,7 +152,7 @@ public:
 
   NewVarExpr(Token identifier, Expr* value) : identifier(identifier), value(value) {}
 
-  ExprResult evaluate() override;
+  ExprValue evaluate() override;
 };
 
 class VarAssignExpr : public Expr {
@@ -162,7 +162,7 @@ public:
 
   VarAssignExpr(Token identifier, Expr* value) : identifier(identifier), value(value) {}
 
-  ExprResult evaluate() override;
+  ExprValue evaluate() override;
 };
 
 class UnaryExpr : public Expr {
@@ -172,7 +172,7 @@ public:
 
   UnaryExpr(Token oper, Expr* value) : oper(oper), value(value) {}
 
-  ExprResult evaluate() override;
+  ExprValue evaluate() override;
 };
 
 class BinaryExpr : public Expr {
@@ -183,7 +183,7 @@ public:
 
   BinaryExpr(Token oper, Expr* left, Expr* right) : oper(oper), left(left), right(right) {}
 
-  ExprResult evaluate() override;
+  ExprValue evaluate() override;
 };
 
 class BlockExpr : public Expr {
@@ -192,8 +192,8 @@ public:
 
   BlockExpr(std::vector<Expr*> list) : list(list) {}
 
-  ExprResult evaluate() override {
-    auto lastResult = ExprResult();
+  ExprValue evaluate() override {
+    auto lastResult = ExprValue();
     for (const auto e : list) {
       lastResult = e->evaluate();
     }
@@ -208,7 +208,7 @@ public:
 
   FuncExpr(std::vector<Token> args, BlockExpr* body) : args(args), body(body) {}
 
-  ExprResult evaluate() override;
+  ExprValue evaluate() override;
 };
 
 class CallExpr : public Expr {
@@ -218,7 +218,7 @@ public:
 
   CallExpr(Expr* func, std::vector<Expr*> args) : func(func), args(args) {}
 
-  ExprResult evaluate() override;
+  ExprValue evaluate() override;
 };
 
 class PrintExpr : public Expr {
@@ -227,7 +227,7 @@ public:
 
   PrintExpr(Expr* value) : value(value) {}
 
-  ExprResult evaluate() override;
+  ExprValue evaluate() override;
 };
 
 #endif // EXPR
