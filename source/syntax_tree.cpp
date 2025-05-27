@@ -1,7 +1,8 @@
-#include "abstract_syntax_tree.hpp"
-#include "common.hpp"
+#include "syntax_tree.hpp"
 #include <iostream>
 #include <vector>
+
+namespace Diploma {
 
 std::vector<Token> tokens;
 std::vector<Expr*> expressions;
@@ -38,30 +39,28 @@ Expr* handlePrimitive();
 Expr* handleUnary();
 Expr* handleFactor();
 Expr* handleTerm();
-BlockExpr* handleBlock();
+Expr* handleBlock();
 Expr* handleFunc();
 Expr* handleExpression();
 
 Expr* handlePrimitive() {
   if (nextSequence(FALSE)) {
     pop();
-    return new PrimaryExpr(ExprValue(false));
+    return new BoolExpr(false);
   }
   if (nextSequence(TRUE)) {
     pop();
-    return new PrimaryExpr(ExprValue(true));
+    return new BoolExpr(true);
   }
 
   if (nextSequence(NUMBER)) {
     auto num = pop();
-    if (num.value.contains("."))
-      return new PrimaryExpr(ExprValue(std::stof(num.value)));
-    else
-      return new PrimaryExpr(ExprValue(std::stoi(num.value)));
+    auto isReal = num.value.find(".") != std::string::npos;
+    return isReal ? (Expr*)new Real32Expr(std::stof(num.value)) : (Expr*)new Int32Expr(std::stoi(num.value));
   }
   if (nextSequence(STRING)) {
     auto str = pop();
-    return new PrimaryExpr(ExprValue(str.value));
+    return new StrExpr(str.value);
   }
 
   if (nextSequence(IDENTIFIER)) {
@@ -124,7 +123,7 @@ Expr* handleTerm() {
   return left;
 }
 
-BlockExpr* handleBlock() {
+Expr* handleBlock() {
   std::vector<Expr*> exprs;
   auto blockStartColumn = top().column;
   while (top().column == blockStartColumn) {
@@ -175,8 +174,11 @@ Expr* handleExpression() {
   }
 
   if (top().grapheme == IDENTIFIER && top().value == "print") {
-    pop();
-    return new PrintExpr(handleExpression());
+    pop(); // print
+    auto format = handleExpression();
+    pop(); // ,
+    auto value = handleExpression();
+    return new PrintExpr(format, value);
   }
 
   if (nextSequence(IDENTIFIER, COMMA)) {
@@ -199,3 +201,5 @@ std::vector<Expr*> parseSyntaxTree(std::vector<Token> t) {
   }
   return expressions;
 }
+
+} // namespace Diploma

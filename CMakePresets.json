@@ -7,8 +7,7 @@
             "generator": "Ninja",
             "binaryDir": "${workspaceFolder}/build",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug",
-                "WITH_TESTS": "ON"
+                "CMAKE_BUILD_TYPE": "Debug"
             }
         }
     ]

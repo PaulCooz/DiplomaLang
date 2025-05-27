@@ -1,0 +1,40 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "shell",
+			"label": "IR to obj",
+			"command": "llc",
+			"args": [
+				"-filetype=obj",
+				"${file}",
+				"-o",
+				"${fileBasenameNoExtension}.o",
+			],
+			"group": "build"
+		},
+		{
+			"type": "shell",
+			"label": "IR to asm",
+			"command": "llc",
+			"args": [
+				"-filetype=asm",
+				"${file}",
+				"-o",
+				"${fileBasenameNoExtension}.s",
+			],
+			"group": "build"
+		},
+		{
+			"type": "shell",
+			"label": "obj to exe",
+			"command": "clang++",
+			"args": [
+				"${file}",
+				"-o",
+				"${fileBasenameNoExtension}.exe",
+			],
+			"group": "build"
+		},
+	]
+}

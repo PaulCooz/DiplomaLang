@@ -5,6 +5,8 @@
 #include <optional>
 #include <string>
 
+namespace Diploma {
+
 int currLine, currColumn;
 
 Token::Token(Grapheme token, std::string value, int ln, int col)
@@ -12,6 +14,18 @@ Token::Token(Grapheme token, std::string value, int ln, int col)
 
 bool isDigit(std::string str, int i) {
   return i < str.length() ? isdigit(str[i]) : false;
+}
+
+bool isQuot(std::string str, int i) {
+  return i < str.length() ? str[i] == '"' : false;
+}
+
+bool isLSpace(std::string str, int i) {
+  return i < str.length() ? str[i] == '_' : false;
+}
+
+bool isBSlash(std::string str, int i) {
+  return i < str.length() ? str[i] == '\\' : false;
 }
 
 bool isAlpha(std::string str, int i) {
@@ -66,12 +80,29 @@ std::optional<Token> numberHandler(std::string str, int& i) {
         }
       } else if (isDigit(str, i)) {
         value += str[i];
-      } else {
+      } else if (!isLSpace(str, i)) {
         break;
       }
       incCursor(str, i);
     }
     result = Token(NUMBER, value, sLn, sCol);
+  }
+  return result;
+}
+
+std::optional<Token> stringHandler(std::string str, int& i) {
+  std::optional<Token> result = std::nullopt;
+  if (isQuot(str, i)) {
+    std::string value = "";
+    int sLn = currLine, sCol = currColumn;
+    do {
+      incCursor(str, i);
+      if (!isQuot(str, i)) {
+        value += str[i];
+      }
+    } while (i < str.length() && !isQuot(str, i));
+    incCursor(str, i);
+    result = Token(STRING, value, sLn, sCol);
   }
   return result;
 }
@@ -132,6 +163,7 @@ std::function<std::optional<Token>(std::string str, int& i)> tokenHandlers[] = {
   wordHandler(RET, "ret", true),
 
   numberHandler,
+  stringHandler,
   identifierHandler,
 };
 
@@ -166,3 +198,5 @@ std::vector<Token> performTokenization(std::istreambuf_iterator<char> begin, std
 
   return tokens;
 }
+
+} // namespace Diploma

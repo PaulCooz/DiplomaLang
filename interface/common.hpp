@@ -1,6 +1,8 @@
 #ifndef COMMON
 #define COMMON
 
+namespace Diploma {
+
 // the smallest functional unit of a writing system
 enum Grapheme {
   END_OF_FILE,
@@ -48,5 +50,7 @@ enum Grapheme {
   ELSE,
   RET,
 };
+
+} // namespace Diploma
 
 #endif // COMMON

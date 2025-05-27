@@ -1,8 +1,4 @@
-swap := a, b ->
-    a = a + b
-    b = a - b
-    a = a - b
-    print a
-    print b
-swap(10, 20) // 20, 10
-swap(-5, -3) // -3, -5
+a := 3_000_000
+b := 200_000
+c := 100_000
+print "a+b*c = %d", a + b * c

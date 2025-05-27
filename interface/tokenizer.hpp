@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+namespace Diploma {
+
 // grapheme with a value
 class Token {
 public:
@@ -21,5 +23,7 @@ public:
 };
 
 std::vector<Token> performTokenization(std::istreambuf_iterator<char> begin, std::istreambuf_iterator<char> end);
+
+} // namespace Diploma
 
 #endif // TOKENIZER
