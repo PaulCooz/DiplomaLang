@@ -1,11 +1,14 @@
 #include "interpreter.hpp"
+#include <functional>
 #include <iostream>
 #include <llvm/ADT/APFloat.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
+#include <llvm/IR/Value.h>
 #include <llvm/IR/ValueSymbolTable.h>
 #include <llvm/SandboxIR/Utils.h>
+#include <llvm/SandboxIR/Value.h>
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/ToolOutputFile.h>
 
@@ -13,9 +16,9 @@ using namespace llvm;
 
 namespace Diploma {
 
-LLVMContext* llvmContext;
-Module* irModule;
-IRBuilder<>* irBuilder;
+static LLVMContext* llvmContext;
+static Module* irModule;
+static IRBuilder<>* irBuilder;
 
 BasicBlock* currBlock;
 
@@ -77,8 +80,8 @@ std::any Interpreter::visitInt32(Int32Expr* int32Expr) {
   return (Value*)(irBuilder->getInt32(int32Expr->value));
 }
 
-std::any Interpreter::visitReal32(Real32Expr* real32Expr) {
-  return (Value*)(ConstantFP::get(irBuilder->getFloatTy(), real32Expr->value));
+std::any Interpreter::visitReal64(Real64Expr* real64Expr) {
+  return (Value*)(ConstantFP::get(irBuilder->getDoubleTy(), real64Expr->value));
 }
 
 std::any Interpreter::visitStr(StrExpr* strExpr) {
@@ -87,19 +90,32 @@ std::any Interpreter::visitStr(StrExpr* strExpr) {
 
 std::any Interpreter::visitNewVar(NewVarExpr* newVarExpr) {
   auto value = std::any_cast<Value*>(newVarExpr->value->visit(this));
+  auto valueType = value->getType();
   auto name = newVarExpr->identifier.value;
+  auto newVar = (Value*)nullptr;
   if (currBlock == nullptr) {
-    auto gVar =
-      new GlobalVariable(*irModule, value->getType(), false, GlobalValue::ExternalLinkage, (Constant*)value, name);
-    return (Value*)gVar;
+    newVar = new GlobalVariable(
+      *irModule, valueType, false, GlobalValue::ExternalLinkage, Constant::getNullValue(valueType), name
+    );
   } else {
-    auto lVar = (Value*)irBuilder->CreateAlloca(value->getType(), nullptr, name);
-    irBuilder->CreateStore(value, lVar);
-    return (Value*)lVar;
+    newVar = (Value*)irBuilder->CreateAlloca(valueType, nullptr, name);
   }
+  irBuilder->CreateStore(value, newVar);
+  return newVar;
 }
 
-std::any Interpreter::visitVarAssign(VarAssignExpr* VarAssignExpr) {}
+std::any Interpreter::visitVarAssign(VarAssignExpr* varAssignExpr) {
+  auto name = varAssignExpr->identifier.value;
+  auto newValue = std::any_cast<Value*>(varAssignExpr->value->visit(this));
+  auto val = (Value*)nullptr;
+  if (currBlock == nullptr) {
+    val = irModule->getGlobalVariable(name);
+  } else {
+    val = currBlock->getValueSymbolTable()->lookup(name);
+  }
+  irBuilder->CreateStore(newValue, val);
+  return newValue;
+}
 
 std::any Interpreter::visitVar(VarExpr* varExpr) {
   auto name = varExpr->identifier.value;
@@ -115,13 +131,59 @@ std::any Interpreter::visitVar(VarExpr* varExpr) {
 
 std::any Interpreter::visitUnary(UnaryExpr* UnaryExpr) {}
 
+Value* createBinOperation(
+  Value* left, Value* right, std::function<Value*(Value*, Value*)> binOperI,
+  std::function<Value*(Value*, Value*)> binOperF
+) {
+  auto leftType = left->getType();
+  auto rightType = right->getType();
+  auto leftIsFloating = leftType->isFloatingPointTy();
+  auto rightIsFloating = rightType->isFloatingPointTy();
+
+  auto binOper = binOperI;
+  if (leftIsFloating || rightIsFloating) {
+    if (!leftIsFloating) {
+      left = irBuilder->CreateSIToFP(left, rightType);
+    } else if (!rightIsFloating) {
+      right = irBuilder->CreateSIToFP(right, leftType);
+    }
+    binOper = binOperF;
+  }
+
+  return binOper(left, right);
+}
+
 std::any Interpreter::visitBinary(BinaryExpr* binaryExpr) {
   auto left = std::any_cast<Value*>(binaryExpr->left->visit(this));
   auto right = std::any_cast<Value*>(binaryExpr->right->visit(this));
   if (binaryExpr->oper.grapheme == STAR) {
-    return (Value*)(irBuilder->CreateMul(left, right));
+    return createBinOperation(
+      left,
+      right,
+      [&](Value* l, Value* r) { return irBuilder->CreateMul(l, r); },
+      [&](Value* l, Value* r) { return irBuilder->CreateFMul(l, r); }
+    );
+  } else if (binaryExpr->oper.grapheme == SLASH) {
+    return createBinOperation(
+      left,
+      right,
+      [&](Value* l, Value* r) { return irBuilder->CreateSDiv(l, r); },
+      [&](Value* l, Value* r) { return irBuilder->CreateFDiv(l, r); }
+    );
   } else if (binaryExpr->oper.grapheme == PLUS) {
-    return (Value*)(irBuilder->CreateAdd(left, right));
+    return createBinOperation(
+      left,
+      right,
+      [&](Value* l, Value* r) { return irBuilder->CreateAdd(l, r); },
+      [&](Value* l, Value* r) { return irBuilder->CreateFAdd(l, r); }
+    );
+  } else if (binaryExpr->oper.grapheme == MINUS) {
+    return createBinOperation(
+      left,
+      right,
+      [&](Value* l, Value* r) { return irBuilder->CreateSub(l, r); },
+      [&](Value* l, Value* r) { return irBuilder->CreateFSub(l, r); }
+    );
   }
   return nullptr;
 }
@@ -130,10 +192,10 @@ std::any Interpreter::visitBlock(BlockExpr* BlockExpr) {}
 std::any Interpreter::visitFunc(FuncExpr* FuncExpr) {}
 std::any Interpreter::visitCall(CallExpr* CallExpr) {}
 
-std::any Interpreter::visitPrint(PrintExpr* printExpr) {
-  auto format = std::any_cast<Value*>(printExpr->format->visit(this));
-  auto output = std::any_cast<Value*>(printExpr->value->visit(this));
-  return (Value*)(irBuilder->CreateCall(PrintfFn, {format, output}));
+std::any Interpreter::visitPrintln(PrintlnExpr* printlnExpr) {
+  auto format = std::any_cast<Value*>(printlnExpr->format->visit(this));
+  auto output = std::any_cast<Value*>(printlnExpr->value->visit(this));
+  return (Value*)(irBuilder->CreateCall(PrintfFn, {format, output})); // TODO \n
 }
 
 } // namespace Diploma

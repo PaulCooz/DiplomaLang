@@ -36,5 +36,19 @@
 			],
 			"group": "build"
 		},
+		{
+			"type": "shell",
+			"label": "IR to exe",
+			"dependsOn": [
+				"IR to obj",
+			],
+			"command": "clang++",
+			"args": [
+				"${fileBasenameNoExtension}.o",
+				"-o",
+				"${fileBasenameNoExtension}.exe",
+			],
+			"group": "build"
+		},
 	]
 }

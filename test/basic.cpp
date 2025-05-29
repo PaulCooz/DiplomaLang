@@ -50,7 +50,7 @@ TEST(Basic, CalcAOBOC) {
           }
 
   for (auto p : exprWithResult) {
-    std::istringstream stream("print " + p.first);
+    std::istringstream stream("println " + p.first);
     auto tokens = performTokenization(istreambuf_iterator<char>(stream), istreambuf_iterator<char>());
     auto syntaxTree = parseSyntaxTree(tokens);
     for (auto t : syntaxTree) {
@@ -60,7 +60,7 @@ TEST(Basic, CalcAOBOC) {
     string value;
     resultStream >> value;
     if (stoi(value) != p.second) {
-      FAIL() << ("print " + p.first) << " is " << value << " but " << p.second << " needed";
+      FAIL() << ("println " + p.first) << " is " << value << " but " << p.second << " needed";
     }
   }
 

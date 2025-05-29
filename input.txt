@@ -1,4 +1,9 @@
-a := 3_000_000
-b := 200_000
-c := 100_000
-print "a+b*c = %d", a + b * c
+a := 10 * 2.5
+b := 200.1
+c := 30
+d := a * b / c
+
+println "a*b/c = %f\n", d
+println "a/b+c = %f\n", a / b + c
+println "a+b-c = %f\n", a + b - c
+println "a-b*c = %f\n", a - b * c

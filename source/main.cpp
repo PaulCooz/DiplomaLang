@@ -13,4 +13,6 @@ int main() {
   auto tokens = performTokenization(istreambuf_iterator<char>(input), istreambuf_iterator<char>());
   auto syntaxTree = parseSyntaxTree(tokens);
   auto runner = Diploma::Interpreter(syntaxTree);
+
+  cout << "done." << endl;
 }

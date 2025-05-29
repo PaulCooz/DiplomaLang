@@ -56,7 +56,7 @@ Expr* handlePrimitive() {
   if (nextSequence(NUMBER)) {
     auto num = pop();
     auto isReal = num.value.find(".") != std::string::npos;
-    return isReal ? (Expr*)new Real32Expr(std::stof(num.value)) : (Expr*)new Int32Expr(std::stoi(num.value));
+    return isReal ? (Expr*)new Real64Expr(std::stod(num.value)) : (Expr*)new Int32Expr(std::stoi(num.value));
   }
   if (nextSequence(STRING)) {
     auto str = pop();
@@ -173,12 +173,12 @@ Expr* handleExpression() {
     return new NewVarExpr(identifier, value);
   }
 
-  if (top().grapheme == IDENTIFIER && top().value == "print") {
-    pop(); // print
+  if (top().grapheme == IDENTIFIER && top().value == "println") {
+    pop(); // println
     auto format = handleExpression();
     pop(); // ,
     auto value = handleExpression();
-    return new PrintExpr(format, value);
+    return new PrintlnExpr(format, value);
   }
 
   if (nextSequence(IDENTIFIER, COMMA)) {

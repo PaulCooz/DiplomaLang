@@ -10,7 +10,7 @@ namespace Diploma {
 class Expr;
 class BoolExpr;
 class Int32Expr;
-class Real32Expr;
+class Real64Expr;
 class StrExpr;
 class NewVarExpr;
 class VarAssignExpr;
@@ -20,13 +20,13 @@ class BinaryExpr;
 class BlockExpr;
 class FuncExpr;
 class CallExpr;
-class PrintExpr;
+class PrintlnExpr;
 
 class TreeWalker {
 public:
   virtual std::any visitBool(BoolExpr*) = 0;
   virtual std::any visitInt32(Int32Expr*) = 0;
-  virtual std::any visitReal32(Real32Expr*) = 0;
+  virtual std::any visitReal64(Real64Expr*) = 0;
   virtual std::any visitStr(StrExpr*) = 0;
   virtual std::any visitNewVar(NewVarExpr*) = 0;
   virtual std::any visitVarAssign(VarAssignExpr*) = 0;
@@ -36,7 +36,7 @@ public:
   virtual std::any visitBlock(BlockExpr*) = 0;
   virtual std::any visitFunc(FuncExpr*) = 0;
   virtual std::any visitCall(CallExpr*) = 0;
-  virtual std::any visitPrint(PrintExpr*) = 0;
+  virtual std::any visitPrintln(PrintlnExpr*) = 0;
 };
 
 class Expr {
@@ -66,14 +66,14 @@ public:
   }
 };
 
-class Real32Expr : public Expr {
+class Real64Expr : public Expr {
 public:
   float value;
 
-  Real32Expr(float value) : value(value) {}
+  Real64Expr(float value) : value(value) {}
 
   std::any visit(TreeWalker* walker) override {
-    return walker->visitReal32(this);
+    return walker->visitReal64(this);
   }
 };
 
@@ -183,15 +183,15 @@ public:
   }
 };
 
-class PrintExpr : public Expr {
+class PrintlnExpr : public Expr {
 public:
   Expr* format;
   Expr* value;
 
-  PrintExpr(Expr* format, Expr* value) : format(format), value(value) {}
+  PrintlnExpr(Expr* format, Expr* value) : format(format), value(value) {}
 
   std::any visit(TreeWalker* walker) override {
-    return walker->visitPrint(this);
+    return walker->visitPrintln(this);
   }
 };
 

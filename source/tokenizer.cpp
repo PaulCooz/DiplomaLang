@@ -95,10 +95,16 @@ std::optional<Token> stringHandler(std::string str, int& i) {
   if (isQuot(str, i)) {
     std::string value = "";
     int sLn = currLine, sCol = currColumn;
+    bool isPrevBS = false;
     do {
       incCursor(str, i);
       if (!isQuot(str, i)) {
-        value += str[i];
+        if (isPrevBS && str[i] == 'n') {
+          value[value.size() - 1] = '\n';
+        } else {
+          value += str[i];
+        }
+        isPrevBS = str[i] == '\\';
       }
     } while (i < str.length() && !isQuot(str, i));
     incCursor(str, i);
