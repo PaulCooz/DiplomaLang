@@ -1,4 +1,5 @@
-#include "interpreter.hpp"
+#include "llvm_walker.cpp"
+#include "type_walker.cpp"
 #include <fstream>
 #include <iostream>
 #include <streambuf>
@@ -12,7 +13,18 @@ int main() {
 
   auto tokens = performTokenization(istreambuf_iterator<char>(input), istreambuf_iterator<char>());
   auto syntaxTree = parseSyntaxTree(tokens);
-  auto runner = Diploma::Interpreter(syntaxTree);
+
+  TreeWalker* walkers[] = {
+    new TypeWalker(),
+    new InterpreterWalker(),
+  };
+  for (auto walker : walkers) {
+    walker->Do(syntaxTree);
+  }
+
+  for (auto walker : walkers) {
+    delete walker;
+  }
 
   cout << "done." << endl;
 }

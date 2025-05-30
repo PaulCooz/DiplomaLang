@@ -24,6 +24,8 @@ class PrintlnExpr;
 
 class TreeWalker {
 public:
+  virtual void Do(std::vector<Diploma::Expr*>) = 0;
+
   virtual std::any visitBool(BoolExpr*) = 0;
   virtual std::any visitInt32(Int32Expr*) = 0;
   virtual std::any visitReal64(Real64Expr*) = 0;
@@ -37,10 +39,25 @@ public:
   virtual std::any visitFunc(FuncExpr*) = 0;
   virtual std::any visitCall(CallExpr*) = 0;
   virtual std::any visitPrintln(PrintlnExpr*) = 0;
+
+  virtual ~TreeWalker() = default;
+};
+
+enum ExprType {
+  VOID,
+
+  BOOL,
+
+  I32,
+  R64,
+
+  STR,
 };
 
 class Expr {
 public:
+  ExprType type;
+
   virtual std::any visit(TreeWalker* walker) = 0;
 };
 

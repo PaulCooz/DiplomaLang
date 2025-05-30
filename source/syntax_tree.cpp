@@ -81,7 +81,7 @@ Expr* handlePrimitive() {
 }
 
 Expr* handleUnary() {
-  if (nextSequence(BANG) || nextSequence(MINUS)) {
+  if (nextSequence(BANG) || nextSequence(MINUS) || nextSequence(PLUS)) {
     auto oper = pop();
     return new UnaryExpr(oper, handleUnary());
   }
