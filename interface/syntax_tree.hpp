@@ -52,6 +52,7 @@ enum ExprType {
   R64,
 
   STR,
+  FUNC,
 };
 
 class Expr {
@@ -180,6 +181,9 @@ class FuncExpr : public Expr {
 public:
   std::vector<Token> args;
   Expr* body;
+
+  std::vector<ExprType> argsTypes;
+  ExprType retType;
 
   FuncExpr(std::vector<Token> args, Expr* body) : args(args), body(body) {}
 

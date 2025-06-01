@@ -166,18 +166,11 @@ Expr* handleExpression() {
     return new VarAssignExpr(identifier, value);
   }
 
-  if (nextSequence(IDENTIFIER, COLON_EQUAL)) {
-    auto identifier = pop();
-    pop();
-    auto value = handleExpression();
-    return new NewVarExpr(identifier, value);
-  }
-
   if (top().grapheme == IDENTIFIER && top().value == "println") {
     pop(); // println
     auto format = handleExpression();
     pop(); // ,
-    auto value = handleExpression();
+    auto value = handleTerm();
     return new PrintlnExpr(format, value);
   }
 

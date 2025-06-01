@@ -6,6 +6,8 @@
 namespace Diploma {
 
 class TypeWalker : public TreeWalker {
+  std::map<std::string, Expr*> context;
+
 public:
   void Do(std::vector<Expr*> syntax) {
     for (auto expr : syntax) {
@@ -36,17 +38,24 @@ public:
   std::any visitNewVar(NewVarExpr* newVarExpr) {
     auto initValue = std::any_cast<Expr*>(newVarExpr->value->visit(this));
     newVarExpr->type = initValue->type;
+    auto res = context.try_emplace(newVarExpr->identifier.value, initValue);
+    if (!res.second) {
+      std::cout << "oh no, you should use assign(=) instead of creating(:=) operator\n";
+    }
     return (Expr*)initValue;
   }
 
   std::any visitVarAssign(VarAssignExpr* varAssignExpr) {
     auto newValue = std::any_cast<Expr*>(varAssignExpr->value->visit(this));
     varAssignExpr->type = newValue->type;
+    context[varAssignExpr->identifier.value] = newValue;
     return (Expr*)newValue;
   }
 
   std::any visitVar(VarExpr* varExpr) {
-    return (Expr*)varExpr; // TODO
+    auto value = context[varExpr->identifier.value];
+    varExpr->type = value->type;
+    return (Expr*)value;
   }
 
   std::any visitUnary(UnaryExpr* unaryExpr) {
@@ -67,9 +76,34 @@ public:
     return (Expr*)binaryExpr;
   }
 
-  std::any visitBlock(BlockExpr* BlockExpr) {}
-  std::any visitFunc(FuncExpr* FuncExpr) {}
-  std::any visitCall(CallExpr* CallExpr) {}
+  std::any visitBlock(BlockExpr* blockExpr) {
+    auto lastValue = (Expr*)nullptr;
+    for (auto b : blockExpr->list) {
+      lastValue = std::any_cast<Expr*>(b->visit(this));
+    }
+    blockExpr->type = lastValue->type;
+    return (Expr*)lastValue;
+  }
+
+  std::any visitFunc(FuncExpr* funcExpr) {
+    funcExpr->type = FUNC;
+    return (Expr*)funcExpr;
+  }
+
+  std::any visitCall(CallExpr* callExpr) {
+    auto func = (FuncExpr*)std::any_cast<Expr*>(callExpr->func->visit(this));
+    if (func->argsTypes.empty() && !callExpr->args.empty()) {
+      for (auto i = 0; i < callExpr->args.size(); i++) {
+        auto arg = std::any_cast<Expr*>(callExpr->args[i]->visit(this));
+        func->argsTypes.emplace_back(arg->type);
+        context[func->args[i].value] = arg;
+      }
+    }
+
+    auto result = std::any_cast<Expr*>(func->body->visit(this));
+    func->retType = callExpr->type = result->type;
+    return result;
+  }
 
   std::any visitPrintln(PrintlnExpr* printlnExpr) {
     printlnExpr->type = I32;

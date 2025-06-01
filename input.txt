@@ -1,9 +1,9 @@
-a := 10 * 2.5
-b := 200.1
-c := 30
-d := a * b / c
+add_and_print := a, b ->
+    a = a + b
+    println "a=%i\n", a
 
-println "a*b/c = %f\n", d
-println "a/b+c = %f\n", a / b + c
-println "a+b-c = %f\n", a + b - c
-println "a-b*c = %f\n", a - b * c
+add_and_print(1, 2)
+add_and_print(-3, +3)
+
+add_and_print = x, y, z -> println "x*y*z=%i\n", x * y * z
+add_and_print(-1, 2, 3)
