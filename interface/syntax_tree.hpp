@@ -17,6 +17,8 @@ class VarAssignExpr;
 class VarExpr;
 class UnaryExpr;
 class BinaryExpr;
+class LogicalExpr;
+class IfElseExpr;
 class BlockExpr;
 class FuncExpr;
 class CallExpr;
@@ -35,6 +37,8 @@ public:
   virtual std::any visitVar(VarExpr*) = 0;
   virtual std::any visitUnary(UnaryExpr*) = 0;
   virtual std::any visitBinary(BinaryExpr*) = 0;
+  virtual std::any visitLogical(LogicalExpr*) = 0;
+  virtual std::any visitIfElse(IfElseExpr*) = 0;
   virtual std::any visitBlock(BlockExpr*) = 0;
   virtual std::any visitFunc(FuncExpr*) = 0;
   virtual std::any visitCall(CallExpr*) = 0;
@@ -163,6 +167,33 @@ public:
 
   std::any visit(TreeWalker* walker) override {
     return walker->visitBinary(this);
+  }
+};
+
+class LogicalExpr : public Expr {
+public:
+  Token oper;
+  Expr* left;
+  Expr* right;
+
+  LogicalExpr(Token oper, Expr* left, Expr* right) : oper(oper), left(left), right(right) {}
+
+  std::any visit(TreeWalker* walker) override {
+    return walker->visitLogical(this);
+  }
+};
+
+class IfElseExpr : public Expr {
+public:
+  Expr* condition;
+  BlockExpr* thenBlock;
+  BlockExpr* elseBlock;
+
+  IfElseExpr(Expr* condition, BlockExpr* thenBlock, BlockExpr* elseBlock)
+    : condition(condition), thenBlock(thenBlock), elseBlock(elseBlock) {}
+
+  std::any visit(TreeWalker* walker) override {
+    return walker->visitIfElse(this);
   }
 };
 

@@ -39,8 +39,11 @@ Expr* handlePrimitive();
 Expr* handleUnary();
 Expr* handleFactor();
 Expr* handleTerm();
-Expr* handleBlock();
+Expr* handleLogicalAnd();
+Expr* handleLogicalOr();
+BlockExpr* handleBlock();
 Expr* handleFunc();
+Expr* handleIfElse();
 Expr* handleExpression();
 
 Expr* handlePrimitive() {
@@ -70,7 +73,7 @@ Expr* handlePrimitive() {
 
   if (nextSequence(LEFT_PAREN)) {
     pop();
-    auto expr = handleTerm();
+    auto expr = handleLogicalOr();
     if (!nextSequence(RIGHT_PAREN))
       std::cout << "STOP! Where is my ')'?" << std::endl;
     pop();
@@ -123,7 +126,27 @@ Expr* handleTerm() {
   return left;
 }
 
-Expr* handleBlock() {
+Expr* handleLogicalAnd() {
+  auto expr = handleTerm();
+  if (nextSequence(AND)) {
+    auto oper = pop();
+    auto right = handleTerm();
+    expr = new LogicalExpr(oper, expr, right);
+  }
+  return expr;
+}
+
+Expr* handleLogicalOr() {
+  auto expr = handleLogicalAnd();
+  if (nextSequence(OR)) {
+    auto oper = pop();
+    auto right = handleLogicalAnd();
+    expr = new LogicalExpr(oper, expr, right);
+  }
+  return expr;
+}
+
+BlockExpr* handleBlock() {
   std::vector<Expr*> exprs;
   auto blockStartColumn = top().column;
   while (top().column == blockStartColumn) {
@@ -151,6 +174,20 @@ Expr* handleFunc() {
   return new FuncExpr(args, handleBlock());
 }
 
+Expr* handleIfElse() {
+  pop(); // if
+
+  auto condition = handleExpression();
+  auto thenBlock = handleBlock();
+  auto elseBlock = (BlockExpr*)nullptr;
+  if (nextSequence(ELSE)) {
+    pop(); // else
+    elseBlock = handleBlock();
+  }
+
+  return new IfElseExpr(condition, thenBlock, elseBlock);
+}
+
 Expr* handleExpression() {
   if (nextSequence(IDENTIFIER, COLON_EQUAL)) {
     auto identifier = pop();
@@ -170,7 +207,7 @@ Expr* handleExpression() {
     pop(); // println
     auto format = handleExpression();
     pop(); // ,
-    auto value = handleTerm();
+    auto value = handleLogicalOr();
     return new PrintlnExpr(format, value);
   }
 
@@ -178,7 +215,11 @@ Expr* handleExpression() {
     return handleFunc();
   }
 
-  return handleTerm();
+  if (nextSequence(IF)) {
+    return handleIfElse();
+  }
+
+  return handleLogicalOr();
 }
 
 std::vector<Expr*> parseSyntaxTree(std::vector<Token> t) {

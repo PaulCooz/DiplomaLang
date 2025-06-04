@@ -228,6 +228,64 @@ public:
     return nullptr;
   }
 
+  std::any visitLogical(LogicalExpr* logicalExpr) {
+    auto oper = logicalExpr->oper.grapheme;
+    auto currFunc = irBuilder->GetInsertBlock()->getParent();
+
+    auto leftName = oper == OR ? "orLeft" : "andLeft";
+    auto rightName = oper == OR ? "orRight" : "andRight";
+    auto endName = oper == OR ? "endOr" : "endAnd";
+    auto resName = oper == OR ? "orRes" : "andRes";
+
+    auto leftBlock = BasicBlock::Create(irBuilder->getContext(), leftName, currFunc);
+    auto rightBlock = BasicBlock::Create(irBuilder->getContext(), rightName, currFunc);
+    auto endBlock = BasicBlock::Create(irBuilder->getContext(), endName, currFunc);
+
+    irBuilder->CreateBr(leftBlock); // enter
+
+    irBuilder->SetInsertPoint(leftBlock);
+    auto left = std::any_cast<Value*>(logicalExpr->left->visit(this));
+    if (oper == OR) {
+      irBuilder->CreateCondBr(left, endBlock, rightBlock);
+    } else {
+      irBuilder->CreateCondBr(left, rightBlock, endBlock);
+    }
+
+    irBuilder->SetInsertPoint(rightBlock);
+    auto right = std::any_cast<Value*>(logicalExpr->right->visit(this));
+    irBuilder->CreateBr(endBlock);
+
+    irBuilder->SetInsertPoint(endBlock);
+    auto res = irBuilder->CreatePHI(irBuilder->getInt1Ty(), 2, resName);
+    res->addIncoming(left, leftBlock);
+    res->addIncoming(right, rightBlock);
+
+    return (Value*)res;
+  }
+
+  std::any visitIfElse(IfElseExpr* ifElseExpr) {
+    auto condition = std::any_cast<Value*>(ifElseExpr->condition->visit(this));
+    auto currFunc = irBuilder->GetInsertBlock()->getParent();
+
+    auto thenBlock = BasicBlock::Create(irBuilder->getContext(), "then", currFunc);
+    auto elseBlock = BasicBlock::Create(irBuilder->getContext(), "else", currFunc);
+    auto endifBlock = BasicBlock::Create(irBuilder->getContext(), "endIf", currFunc);
+
+    irBuilder->CreateCondBr(condition, thenBlock, elseBlock);
+
+    irBuilder->SetInsertPoint(thenBlock);
+    ifElseExpr->thenBlock->visit(this);
+    irBuilder->CreateBr(endifBlock);
+
+    irBuilder->SetInsertPoint(elseBlock);
+    ifElseExpr->elseBlock->visit(this);
+    irBuilder->CreateBr(endifBlock);
+
+    irBuilder->SetInsertPoint(endifBlock);
+
+    return (Value*)nullptr;
+  }
+
   std::any visitBlock(BlockExpr* blockExpr) {
     auto lastValue = (Value*)nullptr;
     for (auto expr : blockExpr->list) {

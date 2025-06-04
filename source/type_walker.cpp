@@ -2,6 +2,7 @@
 #include <functional>
 #include <iostream>
 #include <map>
+#include <optional>
 
 namespace Diploma {
 
@@ -76,6 +77,26 @@ public:
     return (Expr*)binaryExpr;
   }
 
+  std::any visitLogical(LogicalExpr* logicalExpr) {
+    logicalExpr->left->visit(this);
+    logicalExpr->right->visit(this);
+    logicalExpr->type = BOOL;
+    return (Expr*)logicalExpr;
+  }
+
+  std::any visitIfElse(IfElseExpr* ifElseExpr) {
+    auto thenRetType = std::any_cast<Expr*>(ifElseExpr->thenBlock->visit(this))->type;
+    auto elseRetType = (std::optional<ExprType>)std::nullopt;
+    if (ifElseExpr->elseBlock != nullptr) {
+      elseRetType = std::any_cast<Expr*>(ifElseExpr->elseBlock->visit(this))->type;
+    }
+    if (elseRetType.has_value() && thenRetType != elseRetType) {
+      std::cout << "it can be ok, but there are different types if-else blocks return\n";
+    }
+    ifElseExpr->type = thenRetType;
+    return (Expr*)ifElseExpr;
+  }
+
   std::any visitBlock(BlockExpr* blockExpr) {
     auto lastValue = (Expr*)nullptr;
     for (auto b : blockExpr->list) {
@@ -106,6 +127,8 @@ public:
   }
 
   std::any visitPrintln(PrintlnExpr* printlnExpr) {
+    printlnExpr->format->visit(this);
+    printlnExpr->value->visit(this);
     printlnExpr->type = I32;
     return (Expr*)printlnExpr;
   }
