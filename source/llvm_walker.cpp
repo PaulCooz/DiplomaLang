@@ -37,6 +37,8 @@ private:
 
   Function* printfFunc;
 
+  std::map<std::string, GlobalVariable*> printFormats;
+
 public:
   InterpreterWalker() {
     llvmContext = new LLVMContext();
@@ -342,9 +344,41 @@ public:
   }
 
   std::any visitPrintln(PrintlnExpr* printlnExpr) {
-    auto format = std::any_cast<Value*>(printlnExpr->format->visit(this));
-    auto output = std::any_cast<Value*>(printlnExpr->value->visit(this));
-    return (Value*)(irBuilder->CreateCall(printfFunc, {format, output})); // TODO \n
+    std::string format = "";
+    std::vector<Value*> args;
+    for (auto i = 0; i < printlnExpr->values.size(); i++) {
+      auto v = printlnExpr->values[i];
+      auto value = std::any_cast<Value*>(v->visit(this));
+      switch (v->type) {
+      case BOOL:
+        format += "%i";
+        value = irBuilder->CreateZExt(value, irBuilder->getInt32Ty());
+        break;
+      case VOID:
+      case I32:
+        format += "%i";
+        break;
+      case R64:
+        format += "%f";
+        break;
+      case STR:
+        format += "%s";
+        break;
+      case FUNC:
+        format += "%i";
+        break;
+      }
+      if (i != printlnExpr->values.size() - 1)
+        format += ", ";
+      args.emplace_back(value);
+    }
+    format += '\n';
+
+    if (printFormats.find(format) == printFormats.end())
+      printFormats[format] = irBuilder->CreateGlobalString(format);
+    args.emplace(args.begin(), printFormats[format]);
+
+    return (Value*)(irBuilder->CreateCall(printfFunc, args));
   }
 
 private:

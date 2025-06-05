@@ -237,10 +237,9 @@ public:
 
 class PrintlnExpr : public Expr {
 public:
-  Expr* format;
-  Expr* value;
+  std::vector<Expr*> values;
 
-  PrintlnExpr(Expr* format, Expr* value) : format(format), value(value) {}
+  PrintlnExpr(std::vector<Expr*> values) : values(values) {}
 
   std::any visit(TreeWalker* walker) override {
     return walker->visitPrintln(this);

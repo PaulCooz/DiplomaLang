@@ -53,10 +53,12 @@ void incCursor(std::string str, int& i, int count = 1) {
 }
 
 std::function<std::optional<Token>(std::string str, int& i)>
-wordHandler(Grapheme grapheme, std::string word, bool checkSpaceOrEOF = false) {
-  return [grapheme, word, checkSpaceOrEOF](std::string str, int& i) {
+wordHandler(Grapheme grapheme, std::string word, bool nonAlphaCheck = false) {
+  return [grapheme, word, nonAlphaCheck](std::string str, int& i) {
     std::optional<Token> result = std::nullopt;
-    if (isSub(str, i, word) && (!checkSpaceOrEOF || isSpaceOrEOF(str, i + word.length()))) {
+    auto niceSubstr = isSub(str, i, word);
+    auto coolNextToIt = !nonAlphaCheck || (!isAlpha(str, i + word.length()) && !isDigit(str, i + word.length()));
+    if (niceSubstr && coolNextToIt) {
       result = Token(grapheme, word);
       incCursor(str, i, word.length());
     }

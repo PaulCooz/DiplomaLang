@@ -204,11 +204,27 @@ Expr* handleExpression() {
   }
 
   if (top().grapheme == IDENTIFIER && top().value == "println") {
-    pop(); // println
-    auto format = handleExpression();
-    pop(); // ,
-    auto value = handleLogicalOr();
-    return new PrintlnExpr(format, value);
+    pop();     // println
+    auto haveParen = top().grapheme == LEFT_PAREN;
+    if (haveParen)
+      pop();   // (
+    std::vector<Expr*> values;
+    while (true) {
+      values.emplace_back(handleLogicalOr());
+      if (top().grapheme == COMMA)
+        pop(); // ,
+      else
+        break;
+    }
+    if (haveParen) {
+      if (top().grapheme == RIGHT_PAREN)
+        pop(); // )
+      else
+        std::cout << "expected a ')' token,"
+                     "but if you don't like writing brackets,"
+                     "you can remove the '(' that comes after 'println'\n";
+    }
+    return new PrintlnExpr(values);
   }
 
   if (nextSequence(IDENTIFIER, COMMA)) {

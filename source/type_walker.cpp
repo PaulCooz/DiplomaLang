@@ -127,8 +127,9 @@ public:
   }
 
   std::any visitPrintln(PrintlnExpr* printlnExpr) {
-    printlnExpr->format->visit(this);
-    printlnExpr->value->visit(this);
+    for (auto v : printlnExpr->values) {
+      v->visit(this);
+    }
     printlnExpr->type = I32;
     return (Expr*)printlnExpr;
   }
