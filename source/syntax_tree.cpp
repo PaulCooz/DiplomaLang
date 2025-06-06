@@ -42,7 +42,7 @@ Expr* handleTerm();
 Expr* handleLogicalAnd();
 Expr* handleLogicalOr();
 BlockExpr* handleBlock();
-Expr* handleFunc();
+FuncExpr* handleFunc();
 Expr* handleIfElse();
 Expr* handleExpression();
 
@@ -73,7 +73,7 @@ Expr* handlePrimitive() {
 
   if (nextSequence(LEFT_PAREN)) {
     pop();
-    auto expr = handleLogicalOr();
+    auto expr = handleExpression();
     if (!nextSequence(RIGHT_PAREN))
       std::cout << "STOP! Where is my ')'?" << std::endl;
     pop();
@@ -155,16 +155,29 @@ BlockExpr* handleBlock() {
   return new BlockExpr(exprs);
 }
 
-Expr* handleFunc() {
+FuncExpr* handleFunc() {
   std::vector<Token> args;
+  auto withParen = top().grapheme == LEFT_PAREN;
+  if (withParen)
+    pop();                            // (
   while (true) {
+    if (top().grapheme != IDENTIFIER) // no args
+      break;
+
     args.emplace_back(top());
-    pop();
+    pop();                            // id
 
     if (top().grapheme == COMMA)
-      pop();
+      pop();                          // ,
     else
       break;
+  }
+
+  if (withParen) {
+    if (top().grapheme == RIGHT_PAREN)
+      pop(); // )
+    else
+      std::cout << "Waiting for an extremely needed token ')'!\n";
   }
 
   if (top().grapheme != MINUS_GREATER)
@@ -188,6 +201,30 @@ Expr* handleIfElse() {
   return new IfElseExpr(condition, thenBlock, elseBlock);
 }
 
+bool isNextFunc() {
+  auto offset = 0;
+  auto withParen = top(offset).grapheme == LEFT_PAREN;
+  if (withParen)
+    offset++;
+  while (true) {
+    if (top(offset).grapheme == IDENTIFIER) {
+      offset++;
+      if (top(offset).grapheme == COMMA) {
+        offset++;
+      }
+    } else {
+      break;
+    }
+  }
+  if (withParen) {
+    if (top(offset).grapheme == RIGHT_PAREN)
+      offset++;
+    else
+      return false;
+  }
+  return top(offset).grapheme == MINUS_GREATER;
+}
+
 Expr* handleExpression() {
   if (nextSequence(IDENTIFIER, COLON_EQUAL)) {
     auto identifier = pop();
@@ -205,8 +242,8 @@ Expr* handleExpression() {
 
   if (top().grapheme == IDENTIFIER && top().value == "println") {
     pop();     // println
-    auto haveParen = top().grapheme == LEFT_PAREN;
-    if (haveParen)
+    auto withParen = top().grapheme == LEFT_PAREN;
+    if (withParen)
       pop();   // (
     std::vector<Expr*> values;
     while (true) {
@@ -216,7 +253,7 @@ Expr* handleExpression() {
       else
         break;
     }
-    if (haveParen) {
+    if (withParen) {
       if (top().grapheme == RIGHT_PAREN)
         pop(); // )
       else
@@ -227,7 +264,7 @@ Expr* handleExpression() {
     return new PrintlnExpr(values);
   }
 
-  if (nextSequence(IDENTIFIER, COMMA)) {
+  if (isNextFunc()) {
     return handleFunc();
   }
 

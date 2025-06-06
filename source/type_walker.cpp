@@ -120,6 +120,10 @@ public:
         context[func->args[i].value] = arg;
       }
     }
+    if (func->args.size() != func->argsTypes.size()) {
+      std::cout << "No no, you call func with " << func->argsTypes.size() << " args of " << func->args.size()
+                << ", it not very zingy for now!\n";
+    }
 
     auto result = std::any_cast<Expr*>(func->body->visit(this));
     func->retType = callExpr->type = result->type;

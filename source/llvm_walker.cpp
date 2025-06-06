@@ -334,13 +334,29 @@ public:
   }
 
   std::any visitCall(CallExpr* callExpr) {
-    auto funcLoad = std::any_cast<Value*>(callExpr->func->visit(this));
-    auto name = cast<GlobalVariable>(cast<LoadInst>(funcLoad)->getPointerOperand())->getName().str(); // TODO ?
     std::vector<Value*> args;
     for (auto a : callExpr->args) {
       args.emplace_back(std::any_cast<Value*>(a->visit(this)));
     }
-    return (Value*)irBuilder->CreateCall(funcScope[name], args);
+
+    auto func = std::any_cast<Value*>(callExpr->func->visit(this));
+    if (isa<Function>(func)) {
+      return (Value*)irBuilder->CreateCall(cast<Function>(func), args);
+    } else {
+      auto funcLoad = cast<LoadInst>(func)->getPointerOperand();
+
+      if (isa<GlobalVariable>(funcLoad)) {
+        auto name = cast<GlobalVariable>(funcLoad)->getName().str(); // TODO !
+        return (Value*)irBuilder->CreateCall(funcScope[name], args);
+      }
+
+      std::vector<Type*> paramTypes;
+      for (auto a : callExpr->args) {
+        paramTypes.emplace_back(ExprToLLVMType(a->type));
+      }
+      auto funcSign = FunctionType::get(ExprToLLVMType(callExpr->type), paramTypes, false); // TODO !
+      return (Value*)irBuilder->CreateCall(funcSign, func, args);
+    }
   }
 
   std::any visitPrintln(PrintlnExpr* printlnExpr) {
@@ -393,8 +409,9 @@ private:
     case R64:
       return irBuilder->getDoubleTy();
     case STR:
+      return PointerType::get(irBuilder->getInt8Ty(), 0);
     case FUNC:
-      return nullptr;
+      return irBuilder->getPtrTy(); // TODO FuncType
     }
   }
 };
