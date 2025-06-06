@@ -195,40 +195,49 @@ public:
     return binOper(left, right);
   }
 
+#define createUsing(i32, r32) \
+  createBinOperation( \
+    left, \
+    right, \
+    [&](Value* l, Value* r) { return irBuilder->i32(l, r); }, \
+    [&](Value* l, Value* r) { return irBuilder->r32(l, r); } \
+  )
+
+  std::any visitComparison(ComparisonExpr* comparisonExpr) {
+    auto left = std::any_cast<Value*>(comparisonExpr->left->visit(this));
+    auto right = std::any_cast<Value*>(comparisonExpr->right->visit(this));
+    if (comparisonExpr->oper.grapheme == EQUAL_EQUAL) {
+      return createUsing(CreateICmpEQ, CreateFCmpOEQ);
+    } else if (comparisonExpr->oper.grapheme == BANG_EQUAL) {
+      return createUsing(CreateICmpNE, CreateFCmpONE);
+    } else if (comparisonExpr->oper.grapheme == LESS) {
+      return createUsing(CreateICmpSLT, CreateFCmpOLT);
+    } else if (comparisonExpr->oper.grapheme == LESS_EQUAL) {
+      return createUsing(CreateICmpSLE, CreateFCmpOLE);
+    } else if (comparisonExpr->oper.grapheme == GREATER) {
+      return createUsing(CreateICmpSGT, CreateFCmpOGT);
+    } else if (comparisonExpr->oper.grapheme == GREATER_EQUAL) {
+      return createUsing(CreateICmpSGE, CreateFCmpOGE);
+    }
+    return nullptr;
+  }
+
   std::any visitBinary(BinaryExpr* binaryExpr) {
     auto left = std::any_cast<Value*>(binaryExpr->left->visit(this));
     auto right = std::any_cast<Value*>(binaryExpr->right->visit(this));
     if (binaryExpr->oper.grapheme == STAR) {
-      return createBinOperation(
-        left,
-        right,
-        [&](Value* l, Value* r) { return irBuilder->CreateMul(l, r); },
-        [&](Value* l, Value* r) { return irBuilder->CreateFMul(l, r); }
-      );
+      return createUsing(CreateMul, CreateFMul);
     } else if (binaryExpr->oper.grapheme == SLASH) {
-      return createBinOperation(
-        left,
-        right,
-        [&](Value* l, Value* r) { return irBuilder->CreateSDiv(l, r); },
-        [&](Value* l, Value* r) { return irBuilder->CreateFDiv(l, r); }
-      );
+      return createUsing(CreateSDiv, CreateFDiv);
     } else if (binaryExpr->oper.grapheme == PLUS) {
-      return createBinOperation(
-        left,
-        right,
-        [&](Value* l, Value* r) { return irBuilder->CreateAdd(l, r); },
-        [&](Value* l, Value* r) { return irBuilder->CreateFAdd(l, r); }
-      );
+      return createUsing(CreateAdd, CreateFAdd);
     } else if (binaryExpr->oper.grapheme == MINUS) {
-      return createBinOperation(
-        left,
-        right,
-        [&](Value* l, Value* r) { return irBuilder->CreateSub(l, r); },
-        [&](Value* l, Value* r) { return irBuilder->CreateFSub(l, r); }
-      );
+      return createUsing(CreateSub, CreateFSub);
     }
     return nullptr;
   }
+
+#undef createUsing
 
   std::any visitLogical(LogicalExpr* logicalExpr) {
     auto oper = logicalExpr->oper.grapheme;

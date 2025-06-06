@@ -16,6 +16,7 @@ class NewVarExpr;
 class VarAssignExpr;
 class VarExpr;
 class UnaryExpr;
+class ComparisonExpr;
 class BinaryExpr;
 class LogicalExpr;
 class IfElseExpr;
@@ -36,6 +37,7 @@ public:
   virtual std::any visitVarAssign(VarAssignExpr*) = 0;
   virtual std::any visitVar(VarExpr*) = 0;
   virtual std::any visitUnary(UnaryExpr*) = 0;
+  virtual std::any visitComparison(ComparisonExpr*) = 0;
   virtual std::any visitBinary(BinaryExpr*) = 0;
   virtual std::any visitLogical(LogicalExpr*) = 0;
   virtual std::any visitIfElse(IfElseExpr*) = 0;
@@ -154,6 +156,19 @@ public:
 
   std::any visit(TreeWalker* walker) override {
     return walker->visitUnary(this);
+  }
+};
+
+class ComparisonExpr : public Expr {
+public:
+  Token oper;
+  Expr* left;
+  Expr* right;
+
+  ComparisonExpr(Token oper, Expr* left, Expr* right) : oper(oper), left(left), right(right) {}
+
+  std::any visit(TreeWalker* walker) override {
+    return walker->visitComparison(this);
   }
 };
 

@@ -39,6 +39,8 @@ Expr* handlePrimitive();
 Expr* handleUnary();
 Expr* handleFactor();
 Expr* handleTerm();
+Expr* handleComparison();
+Expr* handleEquality();
 Expr* handleLogicalAnd();
 Expr* handleLogicalOr();
 BlockExpr* handleBlock();
@@ -126,11 +128,32 @@ Expr* handleTerm() {
   return left;
 }
 
-Expr* handleLogicalAnd() {
-  auto expr = handleTerm();
-  if (nextSequence(AND)) {
+Expr* handleComparison() {
+  auto left = handleTerm();
+  while (top().grapheme == GREATER || top().grapheme == GREATER_EQUAL || top().grapheme == LESS ||
+         top().grapheme == LESS_EQUAL) {
     auto oper = pop();
     auto right = handleTerm();
+    left = new ComparisonExpr(oper, left, right);
+  }
+  return left;
+}
+
+Expr* handleEquality() {
+  auto left = handleComparison();
+  while (top().grapheme == BANG_EQUAL || top().grapheme == EQUAL_EQUAL) {
+    auto oper = pop();
+    auto right = handleComparison();
+    left = new ComparisonExpr(oper, left, right);
+  }
+  return left;
+}
+
+Expr* handleLogicalAnd() {
+  auto expr = handleEquality();
+  if (nextSequence(AND)) {
+    auto oper = pop();
+    auto right = handleEquality();
     expr = new LogicalExpr(oper, expr, right);
   }
   return expr;

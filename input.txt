@@ -1,9 +1,7 @@
-add_and_print := a, b ->
-    a = a + b
-    println "a=%i\n", a
-
-add_and_print(1, 2)
-add_and_print(-3, +3)
-
-add_and_print = x, y, z -> println "x*y*z=%i\n", x * y * z
-add_and_print(-1, 2, 3)
+println 4 >= 4 and 7 < 3
+println -5 < -1	
+println 9 != 9 or 1 == 1
+println 0 == 0.0
+println 5.0 / 2.0 == 5 / 2
+println 1.0 + 2.0 + 3.0 != 1 + 5
+println 1.000_000_001 == 1 // 🧠

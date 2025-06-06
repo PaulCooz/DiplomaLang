@@ -65,6 +65,13 @@ public:
     return (Expr*)unaryExpr;
   }
 
+  std::any visitComparison(ComparisonExpr* comparisonExpr) {
+    auto left = std::any_cast<Expr*>(comparisonExpr->left->visit(this));
+    auto right = std::any_cast<Expr*>(comparisonExpr->right->visit(this));
+    comparisonExpr->type = BOOL;
+    return (Expr*)comparisonExpr;
+  }
+
   std::any visitBinary(BinaryExpr* binaryExpr) {
     auto left = std::any_cast<Expr*>(binaryExpr->left->visit(this));
     auto right = std::any_cast<Expr*>(binaryExpr->right->visit(this));
