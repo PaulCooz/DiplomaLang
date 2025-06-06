@@ -30,13 +30,10 @@ private:
 
   BasicBlock* currBlock;
   std::map<std::string, AllocaInst*> localScope;
-  std::map<std::string, Function*> funcScope;
 
   Function* mainFunc;
-  BasicBlock* mainBlock;
 
   Function* printfFunc;
-
   std::map<std::string, GlobalVariable*> printFormats;
 
 public:
@@ -45,16 +42,14 @@ public:
     irModule = new Module("my module", *llvmContext);
     irBuilder = new IRBuilder<>(*llvmContext);
 
-    currBlock = nullptr;
-
     auto printfSign = FunctionType::get(irBuilder->getInt32Ty(), PointerType::get(irBuilder->getInt8Ty(), 0), true);
     printfFunc = Function::Create(printfSign, Function::ExternalLinkage, "printf", irModule);
 
     auto mainSign = FunctionType::get(irBuilder->getInt32Ty(), false);
     mainFunc = Function::Create(mainSign, Function::ExternalLinkage, "main", irModule);
 
-    mainBlock = BasicBlock::Create(*llvmContext, "entry", mainFunc);
-    irBuilder->SetInsertPoint(mainBlock);
+    currBlock = BasicBlock::Create(*llvmContext, "entry", mainFunc);
+    irBuilder->SetInsertPoint(currBlock);
   }
 
   void Do(std::vector<Expr*> syntax) {
@@ -104,25 +99,7 @@ public:
     auto valueType = value->getType();
     auto name = newVarExpr->identifier.value;
     auto newVar = (Value*)nullptr;
-    if (currBlock == nullptr) {
-      if (isa<Function>(value)) {
-        auto func = dyn_cast<Function>(value);
-        auto funcPtrType = func->getType();
-
-        newVar = new GlobalVariable(
-          *irModule, funcPtrType, false, GlobalValue::ExternalLinkage, ConstantPointerNull::get(funcPtrType), name
-        );
-        funcScope[name] = func;
-      } else {
-        newVar = new GlobalVariable(
-          *irModule, valueType, false, GlobalValue::ExternalLinkage, Constant::getNullValue(valueType), name
-        );
-      }
-    } else {
-      auto a = irBuilder->CreateAlloca(valueType, nullptr, name);
-      newVar = a;
-      localScope[name] = a;
-    }
+    newVar = localScope[name] = irBuilder->CreateAlloca(valueType, nullptr, name);
     irBuilder->CreateStore(value, newVar);
     return newVar;
   }
@@ -130,16 +107,7 @@ public:
   std::any visitVarAssign(VarAssignExpr* varAssignExpr) {
     auto name = varAssignExpr->identifier.value;
     auto newValue = std::any_cast<Value*>(varAssignExpr->value->visit(this));
-    auto val = (Value*)nullptr;
-    if (currBlock == nullptr) {
-      val = irModule->getGlobalVariable(name);
-      if (isa<Function>(newValue)) {
-        funcScope[name] = dyn_cast<Function>(newValue);
-      }
-    } else {
-      val = localScope[name];
-    }
-    irBuilder->CreateStore(newValue, val);
+    irBuilder->CreateStore(newValue, localScope[name]);
     return newValue;
   }
 
@@ -147,15 +115,9 @@ public:
     auto name = varExpr->identifier.value;
     auto varPtr = (Value*)nullptr;
     auto varType = (Type*)nullptr;
-    if (currBlock == nullptr) {
-      auto gv = irModule->getGlobalVariable(name);
-      varPtr = gv;
-      varType = gv->getValueType();
-    } else {
-      auto lv = localScope[name];
-      varPtr = lv;
-      varType = lv->getAllocatedType();
-    }
+    auto lv = localScope[name];
+    varPtr = lv;
+    varType = lv->getAllocatedType();
     return (Value*)irBuilder->CreateLoad(varType, varPtr, name);
   }
 
@@ -314,9 +276,12 @@ public:
     auto funcSign = FunctionType::get(ExprToLLVMType(funcExpr->retType), paramTypes, false);
     auto function = Function::Create(funcSign, Function::ExternalLinkage, "", *irModule);
 
+    auto prevBlock = currBlock;
     currBlock = BasicBlock::Create(irBuilder->getContext(), "entry", function);
     irBuilder->SetInsertPoint(currBlock);
 
+    auto oldScope = localScope;
+    localScope.clear();
     for (auto i = 0; i < funcExpr->args.size(); i++) {
       auto arg = function->getArg(i);
 
@@ -335,9 +300,9 @@ public:
       errs() << "Error verifying function!\n";
     }
 
-    currBlock = nullptr;
-    irBuilder->SetInsertPoint(mainBlock);
-    localScope.clear();
+    currBlock = prevBlock;
+    irBuilder->SetInsertPoint(currBlock);
+    localScope = oldScope;
 
     return (Value*)function;
   }
@@ -352,13 +317,6 @@ public:
     if (isa<Function>(func)) {
       return (Value*)irBuilder->CreateCall(cast<Function>(func), args);
     } else {
-      auto funcLoad = cast<LoadInst>(func)->getPointerOperand();
-
-      if (isa<GlobalVariable>(funcLoad)) {
-        auto name = cast<GlobalVariable>(funcLoad)->getName().str(); // TODO !
-        return (Value*)irBuilder->CreateCall(funcScope[name], args);
-      }
-
       std::vector<Type*> paramTypes;
       for (auto a : callExpr->args) {
         paramTypes.emplace_back(ExprToLLVMType(a->type));

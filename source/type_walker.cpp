@@ -120,6 +120,8 @@ public:
 
   std::any visitCall(CallExpr* callExpr) {
     auto func = (FuncExpr*)std::any_cast<Expr*>(callExpr->func->visit(this));
+    auto oldContext = context;
+    context.clear();
     if (func->argsTypes.empty() && !callExpr->args.empty()) {
       for (auto i = 0; i < callExpr->args.size(); i++) {
         auto arg = std::any_cast<Expr*>(callExpr->args[i]->visit(this));
@@ -134,6 +136,7 @@ public:
 
     auto result = std::any_cast<Expr*>(func->body->visit(this));
     func->retType = callExpr->type = result->type;
+    context = oldContext;
     return result;
   }
 
