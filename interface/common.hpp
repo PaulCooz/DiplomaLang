@@ -37,6 +37,7 @@ enum Grapheme {
   STRING,        // ".*"
   NUMBER,        // [+-]?\d*.?\d*
 
+  NOT,
   TRUE,
   FALSE,
   AND,

@@ -29,7 +29,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "diploma")
 llvm_map_components_to_libnames(llvm_libs core support)
 target_link_libraries(${PROJECT_NAME} ${llvm_libs})
 
-if(false)
+if(WITH_TESTS)
     FetchContent_Declare(
         googletest
         GIT_REPOSITORY "https://github.com/google/googletest.git"

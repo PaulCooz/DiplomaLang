@@ -157,6 +157,7 @@ std::function<std::optional<Token>(std::string str, int& i)> tokenHandlers[] = {
   wordHandler(SLASH, "/"),
   wordHandler(DOT, "."),
 
+  wordHandler(NOT, "not", true),
   wordHandler(TRUE, "true", true),
   wordHandler(FALSE, "false", true),
   wordHandler(AND, "and", true),

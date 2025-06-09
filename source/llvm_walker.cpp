@@ -22,8 +22,10 @@ template <typename T> void dump(T* v) {
 
 namespace Diploma {
 
-class InterpreterWalker : public TreeWalker {
+class LLVMWalker : public TreeWalker {
 private:
+  std::string outputFilePath;
+
   LLVMContext* llvmContext;
   Module* irModule;
   IRBuilder<>* irBuilder;
@@ -37,7 +39,7 @@ private:
   std::map<std::string, GlobalVariable*> printFormats;
 
 public:
-  InterpreterWalker() {
+  LLVMWalker(std::string outputFilePath) : outputFilePath(outputFilePath) {
     llvmContext = new LLVMContext();
     irModule = new Module("my module", *llvmContext);
     irBuilder = new IRBuilder<>(*llvmContext);
@@ -58,7 +60,7 @@ public:
     }
   }
 
-  ~InterpreterWalker() {
+  ~LLVMWalker() {
     irBuilder->CreateRet(irBuilder->getInt32(0));
 
     if (verifyFunction(*mainFunc, &errs())) {
@@ -66,7 +68,7 @@ public:
     }
 
     std::error_code EC;
-    ToolOutputFile out("output.ir", EC, sys::fs::OF_None);
+    ToolOutputFile out(outputFilePath, EC, sys::fs::OF_None);
     if (EC) {
       std::cout << EC.message() << std::endl;
     }
