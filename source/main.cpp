@@ -19,10 +19,9 @@ int main(int argc, char* argv[]) {
   auto tokens = performTokenization(istreambuf_iterator<char>(input), istreambuf_iterator<char>());
   auto syntaxTree = parseSyntaxTree(tokens);
 
-  auto IRFile = filesystem::path(path).replace_extension(".ir").string();
   TreeWalker* walkers[] = {
     new TypeWalker(),
-    new LLVMWalker(IRFile),
+    new LLVMWalker(),
   };
   for (auto walker : walkers) {
     walker->Do(syntaxTree);
@@ -31,6 +30,4 @@ int main(int argc, char* argv[]) {
   for (auto walker : walkers) {
     delete walker;
   }
-
-  cout << "done." << endl;
 }

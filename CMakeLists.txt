@@ -26,7 +26,7 @@ add_executable(${PROJECT_NAME} "source/main.cpp" ${sources})
 target_include_directories(${PROJECT_NAME} PRIVATE "interface")
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "diploma")
 
-llvm_map_components_to_libnames(llvm_libs core support)
+llvm_map_components_to_libnames(llvm_libs core support orcJIT native)
 target_link_libraries(${PROJECT_NAME} ${llvm_libs})
 
 if(WITH_TESTS)

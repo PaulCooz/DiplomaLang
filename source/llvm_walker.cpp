@@ -2,6 +2,7 @@
 #include <functional>
 #include <iostream>
 #include <llvm/ADT/APFloat.h>
+#include <llvm/ExecutionEngine/Orc/LLJIT.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
@@ -10,10 +11,14 @@
 #include <llvm/SandboxIR/Utils.h>
 #include <llvm/SandboxIR/Value.h>
 #include <llvm/Support/FileSystem.h>
+#include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/ToolOutputFile.h>
+#include <llvm/Target/TargetMachine.h>
+#include <llvm/Target/TargetOptions.h>
 #include <map>
 
 using namespace llvm;
+using namespace llvm::orc;
 
 template <typename T> void dump(T* v) {
   v->print(outs(), true);
@@ -24,11 +29,9 @@ namespace Diploma {
 
 class LLVMWalker : public TreeWalker {
 private:
-  std::string outputFilePath;
-
-  LLVMContext* llvmContext;
-  Module* irModule;
-  IRBuilder<>* irBuilder;
+  std::unique_ptr<LLVMContext> llvmContext;
+  std::unique_ptr<Module> irModule;
+  std::unique_ptr<IRBuilder<>> irBuilder;
 
   BasicBlock* currBlock;
   std::map<std::string, AllocaInst*> localScope;
@@ -39,16 +42,16 @@ private:
   std::map<std::string, GlobalVariable*> printFormats;
 
 public:
-  LLVMWalker(std::string outputFilePath) : outputFilePath(outputFilePath) {
-    llvmContext = new LLVMContext();
-    irModule = new Module("my module", *llvmContext);
-    irBuilder = new IRBuilder<>(*llvmContext);
+  LLVMWalker() {
+    llvmContext = std::make_unique<LLVMContext>();
+    irModule = std::make_unique<Module>("my module", *llvmContext);
+    irBuilder = std::make_unique<IRBuilder<>>(*llvmContext);
 
     auto printfSign = FunctionType::get(irBuilder->getInt32Ty(), PointerType::get(irBuilder->getInt8Ty(), 0), true);
-    printfFunc = Function::Create(printfSign, Function::ExternalLinkage, "printf", irModule);
+    printfFunc = Function::Create(printfSign, Function::ExternalLinkage, "printf", irModule.get());
 
     auto mainSign = FunctionType::get(irBuilder->getInt32Ty(), false);
-    mainFunc = Function::Create(mainSign, Function::ExternalLinkage, "main", irModule);
+    mainFunc = Function::Create(mainSign, Function::ExternalLinkage, "main", irModule.get());
 
     currBlock = BasicBlock::Create(*llvmContext, "entry", mainFunc);
     irBuilder->SetInsertPoint(currBlock);
@@ -67,17 +70,21 @@ public:
       errs() << "Error verifying function!\n";
     }
 
-    std::error_code EC;
-    ToolOutputFile out(outputFilePath, EC, sys::fs::OF_None);
-    if (EC) {
-      std::cout << EC.message() << std::endl;
-    }
-    out.keep();
-    irModule->print(out.os(), nullptr);
+    InitializeAllTargetInfos();
+    InitializeAllTargets();
+    InitializeAllTargetMCs();
+    InitializeAllAsmPrinters();
+    InitializeAllAsmParsers();
 
-    delete irBuilder;
-    delete irModule;
-    delete llvmContext;
+    auto host = cantFail(JITTargetMachineBuilder::detectHost());
+    auto JIT = cantFail(LLJITBuilder().setJITTargetMachineBuilder(host).create());
+
+    cantFail(JIT->addIRModule(ThreadSafeModule(std::move(irModule), std::move(llvmContext))));
+
+    auto exeAddr = cantFail(JIT->lookup("main"));
+    auto mainFn = exeAddr.toPtr<int (*)()>();
+
+    printf("done with code: %d\n", mainFn());
   }
 
   std::any visitBool(BoolExpr* boolExpr) {
