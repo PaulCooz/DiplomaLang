@@ -34,8 +34,8 @@ enum Grapheme {
   SLASH_SLASH,   // //
 
   IDENTIFIER,    // \w[\w\d]*
-  STRING,        // ".*"
-  NUMBER,        // [+-]?\d*.?\d*
+  STRING,        // (".*")|('.*')
+  NUMBER,        // [+-]?\d+(.\d+)?
 
   NOT,
   TRUE,

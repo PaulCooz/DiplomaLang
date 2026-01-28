@@ -130,7 +130,7 @@ public:
       }
     }
     if (func->args.size() != func->argsTypes.size()) {
-      std::cout << "No no, you call func with " << func->argsTypes.size() << " args of " << func->args.size()
+      std::cout << "no-no, you call func with " << func->argsTypes.size() << " args of " << func->args.size()
                 << ", it not very zingy for now!\n";
     }
 

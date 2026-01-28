@@ -200,11 +200,11 @@ FuncExpr* handleFunc() {
     if (top().grapheme == RIGHT_PAREN)
       pop(); // )
     else
-      std::cout << "Waiting for an extremely needed token ')'!\n";
+      std::cout << "waiting for an extremely needed token ')'!\n";
   }
 
   if (top().grapheme != MINUS_GREATER)
-    std::cout << "Waited unnecessary '->' token" << std::endl;
+    std::cout << "waited unnecessary '->' token" << std::endl;
   pop();
 
   return new FuncExpr(args, handleBlock());

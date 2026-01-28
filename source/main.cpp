@@ -1,4 +1,6 @@
+#if USE_LLVM
 #include "llvm_walker.cpp"
+#endif
 #include "type_walker.cpp"
 #include <filesystem>
 #include <fstream>
@@ -21,7 +23,9 @@ int main(int argc, char* argv[]) {
 
   TreeWalker* walkers[] = {
     new TypeWalker(),
+#if USE_LLVM
     new LLVMWalker(),
+#endif
   };
   for (auto walker : walkers) {
     walker->Do(syntaxTree);

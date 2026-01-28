@@ -16,18 +16,26 @@ include(FetchContent)
 set(FETCHCONTENT_QUIET FALSE)
 set(FETCHCONTENT_BASE_DIR ${CMAKE_BINARY_DIR})
 
-find_package(LLVM REQUIRED CONFIG)
+if(USE_LLVM)
+    add_compile_definitions(USE_LLVM)
 
-include_directories(${LLVM_INCLUDE_DIRS})
-separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
-add_definitions(${LLVM_DEFINITIONS_LIST})
+    find_package(LLVM REQUIRED CONFIG)
 
-add_executable(${PROJECT_NAME} "source/main.cpp" ${sources})
-target_include_directories(${PROJECT_NAME} PRIVATE "interface")
-set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "diploma")
+    include_directories(${LLVM_INCLUDE_DIRS})
+    separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
+    add_definitions(${LLVM_DEFINITIONS_LIST})
 
-llvm_map_components_to_libnames(llvm_libs core support orcJIT native)
-target_link_libraries(${PROJECT_NAME} ${llvm_libs})
+    add_executable(${PROJECT_NAME} "source/main.cpp" ${sources})
+    target_include_directories(${PROJECT_NAME} PRIVATE "interface")
+    set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "diploma")
+
+    llvm_map_components_to_libnames(llvm_libs core support orcJIT native)
+    target_link_libraries(${PROJECT_NAME} ${llvm_libs})
+else()
+    add_executable(${PROJECT_NAME} "source/main.cpp" ${sources})
+    target_include_directories(${PROJECT_NAME} PRIVATE "interface")
+    set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "diploma")
+endif()
 
 if(WITH_TESTS)
     FetchContent_Declare(

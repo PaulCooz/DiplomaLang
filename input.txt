@@ -1,7 +1,27 @@
-println 4 >= 4 and 7 < 3
-println -5 < -1	
-println 9 != 9 or 1 == 1
-println 0 == 0.0
-println 5.0 / 2.0 == 5 / 2
-println 1.0 + 2.0 + 3.0 != 1 + 5
-println 1.000_000_001 == 1 // 🧠
+// a big test:
+
+// a := 1 == 2 or 4 < 5
+// b := 5 > 3
+
+// if a and b
+//    println "then ", 33.3 <= 44.44
+// else
+//    println "else ", 10 != 10
+
+get_func := ->
+    a, b -> println a, b
+
+f := get_func()
+f(1, 2)
+
+
+// println 1.000_000_001 == 1  // 1 🧠
+// println 5.0 / 2.0 == 5 / 2  // 0
+
+
+// a := 10 * 2.5
+// b := 200.1
+// c := 30
+// d := a * b / c
+// println d                   // 166.75
+// println a - b * c           // -5978.0

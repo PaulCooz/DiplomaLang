@@ -1,3 +1,5 @@
+#if USE_LLVM
+
 #include "syntax_tree.hpp"
 #include <functional>
 #include <iostream>
@@ -67,7 +69,7 @@ public:
     irBuilder->CreateRet(irBuilder->getInt32(0));
 
     if (verifyFunction(*mainFunc, &errs())) {
-      errs() << "Error verifying function!\n";
+      errs() << "error verifying function!\n";
     }
 
     InitializeAllTargetInfos();
@@ -306,7 +308,7 @@ public:
     irBuilder->CreateRet(ret);
 
     if (verifyFunction(*function, &errs())) {
-      errs() << "Error verifying function!\n";
+      errs() << "error verifying function!\n";
     }
 
     currBlock = prevBlock;
@@ -393,3 +395,5 @@ private:
 };
 
 } // namespace Diploma
+
+#endif // USE_LLVM

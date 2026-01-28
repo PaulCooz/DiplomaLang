@@ -75,7 +75,7 @@ std::optional<Token> numberHandler(std::string str, int& i) {
     while (i < str.length()) {
       if (str[i] == '.') {
         if (has_dot) {
-          std::cout << "Too much dots for one number, I know you love it but don't overdo" << std::endl;
+          std::cout << "too much dots for one number, I know you love it but don't overdo" << std::endl;
         } else {
           value += '.';
           has_dot = true;
