@@ -12,7 +12,7 @@ using namespace std;
 using namespace Diploma;
 
 int main(int argc, char* argv[]) {
-  string path = "D:/GSU/diploma/input.txt";
+  string path = "input.txt";
   if (argc > 1) {
     path = argv[1];
   }
