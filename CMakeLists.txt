@@ -3,15 +3,16 @@ project(SuperBuild LANGUAGES C CXX)
 
 include(ExternalProject)
 
+set(LLVM_INSTALL "${PROJECT_SOURCE_DIR}/build/LLVM/install")
 if(USE_LLVM)
     ExternalProject_Add(
         LLVM
 
-        PREFIX "${PROJECT_SOURCE_DIR}/lib/LLVM"
+        PREFIX "${PROJECT_SOURCE_DIR}/build/LLVM"
+        BINARY_DIR "${PROJECT_SOURCE_DIR}/build/LLVM/build"
+        INSTALL_DIR ${LLVM_INSTALL}
         SOURCE_DIR "${PROJECT_SOURCE_DIR}/lib/llvm-project"
         SOURCE_SUBDIR "llvm"
-        BINARY_DIR "${PROJECT_SOURCE_DIR}/lib/LLVM/build"
-        INSTALL_DIR "${PROJECT_SOURCE_DIR}/lib/LLVM/install"
 
         GIT_REPOSITORY "https://github.com/llvm/llvm-project.git"
         GIT_TAG "llvmorg-21.1.8"
@@ -25,7 +26,7 @@ if(USE_LLVM)
         -DLLVM_INCLUDE_BENCHMARKS=OFF
         -DLLVM_INCLUDE_TESTS=OFF
         -DLLVM_INCLUDE_EXAMPLES=OFF
-        -DCMAKE_INSTALL_PREFIX=${PROJECT_SOURCE_DIR}/lib/LLVM/install
+        -DCMAKE_INSTALL_PREFIX=${LLVM_INSTALL}
         BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --parallel
         INSTALL_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --target install
     )
@@ -46,5 +47,5 @@ ExternalProject_Add(
     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
     -DUSE_LLVM=${USE_LLVM}
     -DWITH_TESTS=${WITH_TESTS}
-    -DLLVM_DIR=${PROJECT_SOURCE_DIR}/lib/LLVM/install/lib/cmake/llvm
+    -DLLVM_DIR=${LLVM_INSTALL}/lib/cmake/llvm
 )
